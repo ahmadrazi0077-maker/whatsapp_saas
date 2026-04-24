@@ -1,0 +1,49 @@
+{
+  "app": {
+    "name": "واٹس ایپ ساس",
+    "tagline": "کاروبار کے لیے طاقتور واٹس ایپ آٹومیشن",
+    "description": "خودکار واٹس ایپ مارکیٹنگ کے ساتھ اپنے کاروبار کو بڑھائیں"
+  },
+  "nav": {
+    "dashboard": "ڈیش بورڈ",
+    "chats": "چیٹس",
+    "broadcasts": "براڈکاسٹس",
+    "contacts": "رابطے",
+    "automation": "آٹومیشن",
+    "analytics": "تجزیات",
+    "settings": "ترتیبات",
+    "pricing": "قیمتوں"
+  },
+  "actions": {
+    "save": "محفوظ کریں",
+    "cancel": "منسوخ کریں",
+    "delete": "حذف کریں",
+    "edit": "ترمیم کریں",
+    "send": "بھیجیں",
+    "connect": "منسلک کریں",
+    "disconnect": "منقطع کریں",
+    "refresh": "ریفریش کریں",
+    "export": "برآمد کریں"
+  },
+  "status": {
+    "success": "کامیاب!",
+    "error": "خرابی!",
+    "loading": "لوڈ ہو رہا ہے...",
+    "connected": "منسلک",
+    "disconnected": "منقطع",
+    "pending": "زیر التواء"
+  },
+  "messages": {
+    "welcome": "واٹس ایپ ساس میں خوش آمدید",
+    "login_success": "کامیابی سے لاگ ان ہوگیا",
+    "logout_success": "کامیابی سے لاگ آؤٹ ہوگیا",
+    "save_success": "کامیابی سے محفوظ ہوگیا",
+    "delete_success": "کامیابی سے حذف ہوگیا"
+  },
+  "errors": {
+    "generic": "کچھ غلط ہوگیا",
+    "network": "نیٹ ورک کی خرابی",
+    "unauthorized": "غیر مجاز رسائی",
+    "not_found": "ریسورس نہیں ملا"
+  }
+}
