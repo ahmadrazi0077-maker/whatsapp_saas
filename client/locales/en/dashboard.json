@@ -1,0 +1,16 @@
+{
+  "title": "Dashboard",
+  "stats": {
+    "total_messages": "Total Messages",
+    "total_contacts": "Total Contacts",
+    "active_chats": "Active Chats",
+    "response_rate": "Response Rate",
+    "avg_response_time": "Avg Response Time",
+    "satisfaction_rate": "Satisfaction Rate"
+  },
+  "recent_chats": "Recent Chats",
+  "message_volume": "Message Volume",
+  "device_status": "Device Status",
+  "quick_actions": "Quick Actions",
+  "no_data": "No data available"
+}

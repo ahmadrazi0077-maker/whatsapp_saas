@@ -1,0 +1,49 @@
+{
+  "app": {
+    "name": "WhatsApp SaaS",
+    "tagline": "Powerful WhatsApp Automation for Businesses",
+    "description": "Grow your business with automated WhatsApp marketing"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "chats": "Chats",
+    "broadcasts": "Broadcasts",
+    "contacts": "Contacts",
+    "automation": "Automation",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "pricing": "Pricing"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "send": "Send",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "refresh": "Refresh",
+    "export": "Export"
+  },
+  "status": {
+    "success": "Success!",
+    "error": "Error!",
+    "loading": "Loading...",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "pending": "Pending"
+  },
+  "messages": {
+    "welcome": "Welcome to WhatsApp SaaS",
+    "login_success": "Successfully logged in",
+    "logout_success": "Logged out successfully",
+    "save_success": "Saved successfully",
+    "delete_success": "Deleted successfully"
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "network": "Network error",
+    "unauthorized": "Unauthorized access",
+    "not_found": "Resource not found"
+  }
+}
