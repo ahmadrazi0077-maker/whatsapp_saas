@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect } from 'react';
 import { PlusIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
@@ -17,7 +16,6 @@ interface AutoReplyRule {
 }
 
 export default function RuleBuilder() {
-  const { t } = useTranslation(['automation']);
   const [rules, setRules] = useState<AutoReplyRule[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingRule, setEditingRule] = useState<AutoReplyRule | null>(null);
@@ -34,7 +32,7 @@ export default function RuleBuilder() {
     delaySeconds: 0,
   });
 
-  useState(() => {
+  useEffect(() => {
     fetchRules();
     fetchDevices();
   }, []);
