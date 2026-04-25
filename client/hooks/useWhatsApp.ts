@@ -1,10 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
+
+interface Device {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  status: 'connected' | 'disconnected' | 'connecting' | 'error';
+  qrCode?: string;
+  lastConnected?: string;
+}
 
 export function useWhatsApp() {
-  const [devices, setDevices] = useState([]);
+  const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
 
@@ -29,12 +37,10 @@ export function useWhatsApp() {
     try {
       const response = await fetch('/api/whatsapp/connect', { method: 'POST' });
       const data = await response.json();
-      
-      if (data.qrCode) {
-        return data;
-      }
+      await fetchDevices();
+      return data;
     } catch (error) {
-      toast.error('Failed to connect device');
+      console.error('Failed to connect device:', error);
       throw error;
     } finally {
       setConnecting(false);
@@ -44,10 +50,10 @@ export function useWhatsApp() {
   const disconnectDevice = async (deviceId: string) => {
     try {
       await fetch(`/api/whatsapp/disconnect/${deviceId}`, { method: 'POST' });
-      toast.success('Device disconnected');
       await fetchDevices();
     } catch (error) {
-      toast.error('Failed to disconnect device');
+      console.error('Failed to disconnect device:', error);
+      throw error;
     }
   };
 
@@ -62,7 +68,7 @@ export function useWhatsApp() {
       if (!response.ok) throw new Error('Failed to send message');
       return await response.json();
     } catch (error) {
-      toast.error('Failed to send message');
+      console.error('Failed to send message:', error);
       throw error;
     }
   };
