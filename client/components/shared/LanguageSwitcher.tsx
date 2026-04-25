@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect, Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
-import { ChevronDownIcon, LanguageIcon } from '@heroicons/react/24/outline';
-import { Fragment } from 'react';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 interface Language {
   code: string;
@@ -18,48 +16,23 @@ const languages: Language[] = [
   { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸', dir: 'ltr' },
   { code: 'ur', name: 'Urdu', nativeName: 'اردو', flag: '🇵🇰', dir: 'rtl' },
   { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦', dir: 'rtl' },
-  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸', dir: 'ltr' },
-  { code: 'pt', name: 'Portuguese', nativeName: 'Português', flag: '🇧🇷', dir: 'ltr' },
-  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳', dir: 'ltr' },
-  { code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳', dir: 'ltr' },
 ];
 
 export default function LanguageSwitcher() {
-  const { i18n, t } = useTranslation();
-  const [currentLang, setCurrentLang] = useState<Language | null>(null);
+  const [currentLang, setCurrentLang] = useState<Language>(languages[0]);
 
   useEffect(() => {
-    const langCode = i18n.language;
-    const lang = languages.find(l => l.code === langCode) || languages[0];
+    const savedLang = localStorage.getItem('preferred-language');
+    const lang = languages.find(l => l.code === savedLang) || languages[0];
     setCurrentLang(lang);
-    
-    // Set RTL/LTR direction
     document.documentElement.dir = lang.dir;
-    document.documentElement.lang = langCode;
-  }, [i18n.language]);
+  }, []);
 
   const changeLanguage = async (lang: Language) => {
-    await i18n.changeLanguage(lang.code);
     setCurrentLang(lang);
-    document.documentElement.dir = lang.dir;
-    document.documentElement.lang = lang.code;
-    
-    // Save to localStorage
     localStorage.setItem('preferred-language', lang.code);
-    
-    // Send to backend
-    try {
-      await fetch('/api/user/preferences', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language: lang.code, rtl: lang.dir === 'rtl' }),
-      });
-    } catch (error) {
-      console.error('Failed to save language preference:', error);
-    }
+    document.documentElement.dir = lang.dir;
   };
-
-  if (!currentLang) return null;
 
   return (
     <Menu as="div" className="relative inline-block text-left">
@@ -88,12 +61,12 @@ export default function LanguageSwitcher() {
                     className={`${
                       active ? 'bg-gray-100' : ''
                     } flex w-full items-center gap-3 px-4 py-2 text-sm text-gray-700 ${
-                      i18n.language === lang.code ? 'bg-blue-50 font-semibold' : ''
+                      currentLang.code === lang.code ? 'bg-blue-50 font-semibold' : ''
                     }`}
                   >
                     <span className="text-xl">{lang.flag}</span>
                     <span className="flex-1 text-left">{lang.nativeName}</span>
-                    {i18n.language === lang.code && (
+                    {currentLang.code === lang.code && (
                       <span className="text-blue-600">✓</span>
                     )}
                   </button>
