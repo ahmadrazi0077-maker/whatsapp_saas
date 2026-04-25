@@ -10,11 +10,6 @@ const nextConfig = {
       },
     ],
   },
-  i18n: {
-    locales: ['en', 'ur', 'ar'],
-    defaultLocale: 'en',
-    // Remove localeDetection - it's not valid in this version
-  },
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
@@ -22,6 +17,8 @@ const nextConfig = {
     };
     return config;
   },
+  // Disable strict mode for now to avoid module issues
+  reactStrictMode: false,
 };
 
 module.exports = nextConfig;
