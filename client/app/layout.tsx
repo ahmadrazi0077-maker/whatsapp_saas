@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'WhatsApp SaaS - Business WhatsApp Automation',
-  description: 'Powerful WhatsApp automation for businesses. Send bulk messages, auto-reply, and manage leads efficiently.',
+  description: 'Powerful WhatsApp automation for businesses.',
 };
 
 export default function RootLayout({
