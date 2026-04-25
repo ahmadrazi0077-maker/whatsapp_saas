@@ -1,0 +1,11 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Copy the full schema from the SQL above into Prisma format
+// Or use the SQL directly since Supabase works with raw SQL
