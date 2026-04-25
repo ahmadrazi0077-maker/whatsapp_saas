@@ -1,9 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { PlusIcon, QrCodeIcon, TrashIcon, RefreshIcon } from '@heroicons/react/24/outline';
-import QRCodeModal from '@/components/shared/QRCodeModal';
+import React, { useState, useEffect } from 'react';
+import { PlusIcon, QrCodeIcon, TrashIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 interface Device {
@@ -16,7 +14,6 @@ interface Device {
 }
 
 export default function DeviceSettings() {
-  const { t } = useTranslation(['settings']);
   const [devices, setDevices] = useState<Device[]>([]);
   const [showQRModal, setShowQRModal] = useState(false);
   const [connectingDevice, setConnectingDevice] = useState<string | null>(null);
@@ -81,6 +78,16 @@ export default function DeviceSettings() {
     }
   };
 
+  const reconnectDevice = async (deviceId: string) => {
+    try {
+      await fetch(`/api/whatsapp/reconnect/${deviceId}`, { method: 'POST' });
+      toast.success('Reconnecting device...');
+      fetchDevices();
+    } catch (error) {
+      toast.error('Failed to reconnect device');
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'connected':
@@ -93,6 +100,10 @@ export default function DeviceSettings() {
         return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">Disconnected</span>;
     }
   };
+
+  if (loading) {
+    return <div className="text-center py-12">Loading devices...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -111,11 +122,11 @@ export default function DeviceSettings() {
         </button>
       </div>
       
-      {loading ? (
-        <div className="text-center py-12">Loading devices...</div>
-      ) : devices.length === 0 ? (
+      {devices.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed rounded-lg">
-          <DevicePhoneMobileIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <svg className="h-16 w-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
           <h3 className="text-lg font-semibold mb-2">No devices connected</h3>
           <p className="text-gray-500 mb-4">Connect your first WhatsApp device to start messaging</p>
           <button
@@ -131,7 +142,9 @@ export default function DeviceSettings() {
             <div key={device.id} className="border rounded-lg p-4 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white">
-                  <DevicePhoneMobileIcon className="h-6 w-6" />
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -161,7 +174,7 @@ export default function DeviceSettings() {
                     onClick={() => reconnectDevice(device.id)}
                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
                   >
-                    <RefreshIcon className="h-5 w-5" />
+                    <ArrowPathIcon className="h-5 w-5" />
                   </button>
                 )}
               </div>
@@ -170,11 +183,30 @@ export default function DeviceSettings() {
         </div>
       )}
       
-      <QRCodeModal
-        isOpen={showQRModal}
-        onClose={() => setShowQRModal(false)}
-        deviceId={connectingDevice}
-      />
+      {/* QR Code Modal */}
+      {showQRModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Scan QR Code</h3>
+              <button onClick={() => setShowQRModal(false)} className="text-gray-500 hover:text-gray-700">
+                ✕
+              </button>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-gray-500 mb-4">
+                Open WhatsApp on your phone → Settings → Linked Devices → Link a Device
+              </p>
+              <div className="flex justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+              <p className="text-xs text-gray-400 mt-4">
+                Waiting for connection... This may take a few moments
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
