@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -22,7 +22,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
+      // Replace with your actual API call
       const response = await fetch('/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -59,20 +60,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (!response.ok) {
-      throw new Error('Login failed');
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
+      setUser(data.user);
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-
-    const data = await response.json();
-    localStorage.setItem('token', data.token);
-    setUser(data.user);
-    router.push('/dashboard');
   };
 
   const logout = async () => {
@@ -82,20 +88,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (userData: any) => {
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData),
-    });
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
 
-    if (!response.ok) {
-      throw new Error('Registration failed');
+      if (!response.ok) {
+        throw new Error('Registration failed');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
+      setUser(data.user);
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
     }
-
-    const data = await response.json();
-    localStorage.setItem('token', data.token);
-    setUser(data.user);
-    router.push('/dashboard');
   };
 
   return (
