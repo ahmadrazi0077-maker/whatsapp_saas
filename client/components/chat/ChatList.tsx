@@ -1,4 +1,4 @@
-cat > components/chat/ChatList.tsx << 'EOF'
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -137,4 +137,4 @@ export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) 
     </div>
   );
 }
-EOF
+
