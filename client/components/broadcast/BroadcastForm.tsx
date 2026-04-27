@@ -1,4 +1,3 @@
-cat > components/broadcast/BroadcastForm.tsx << 'EOF'
 'use client';
 
 import React, { useState } from 'react';
@@ -141,4 +140,3 @@ export default function BroadcastForm({ onSuccess }: BroadcastFormProps) {
     </form>
   );
 }
-EOF
