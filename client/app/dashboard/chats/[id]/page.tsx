@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { 
   PhoneIcon, 
   VideoCameraIcon, 
@@ -11,9 +10,8 @@ import {
   PaperClipIcon,
   FaceSmileIcon,
 } from '@heroicons/react/24/outline';
-import { formatDistanceToNow, format } from 'date-fns';
-import { motion } from 'framer-motion';
-import EmojiPicker from 'emoji-picker-react';
+import { format } from 'date-fns';
+import toast from 'react-hot-toast';
 
 interface Message {
   id: string;
@@ -39,13 +37,6 @@ export default function ChatDetailPage() {
       body: 'I need information about your pricing plans',
       fromMe: true,
       timestamp: new Date(Date.now() - 3500000),
-      status: 'read',
-    },
-    {
-      id: '3',
-      body: 'Sure! Our basic plan starts at $29/month',
-      fromMe: false,
-      timestamp: new Date(Date.now() - 3400000),
       status: 'read',
     },
   ]);
@@ -81,7 +72,6 @@ export default function ChatDetailPage() {
     
     setMessages([...messages, message]);
     setNewMessage('');
-    setShowEmojiPicker(false);
     
     // Simulate reply
     setTimeout(() => {
@@ -96,14 +86,17 @@ export default function ChatDetailPage() {
     }, 2000);
   };
 
-  const handleEmojiClick = (emojiObject: any) => {
-    setNewMessage(prev => prev + emojiObject.emoji);
-  };
-
   const handleTyping = () => {
     setIsTyping(true);
     setTimeout(() => setIsTyping(false), 1500);
   };
+
+  const handleEmojiClick = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
+    setShowEmojiPicker(false);
+  };
+
+  const commonEmojis = ['😀', '😂', '😊', '❤️', '👍', '🎉', '🔥', '✨'];
 
   return (
     <div className="h-[calc(100vh-10rem)] flex flex-col bg-gray-50 dark:bg-gray-900 rounded-xl overflow-hidden">
@@ -127,7 +120,7 @@ export default function ChatDetailPage() {
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white">{contact.name}</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {contact.isOnline ? 'Online' : `Last seen ${formatDistanceToNow(contact.lastSeen, { addSuffix: true })}`}
+              {contact.isOnline ? 'Online' : 'Offline'}
             </p>
           </div>
         </div>
@@ -147,12 +140,9 @@ export default function ChatDetailPage() {
       
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        {messages.map((message, index) => (
-          <motion.div
+        {messages.map((message) => (
+          <div
             key={message.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.02 }}
             className={`flex ${message.fromMe ? 'justify-end' : 'justify-start'}`}
           >
             <div
@@ -170,7 +160,7 @@ export default function ChatDetailPage() {
                 {message.fromMe && message.status === 'sent' && <span>✓</span>}
               </div>
             </div>
-          </motion.div>
+          </div>
         ))}
         
         {isTyping && (
@@ -211,20 +201,32 @@ export default function ChatDetailPage() {
               }}
               placeholder="Type a message..."
               rows={1}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-4 py-2 pr-24 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               style={{ minHeight: '40px', maxHeight: '120px' }}
             />
             
-            <button
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="absolute right-2 bottom-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full transition"
-            >
-              <FaceSmileIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-            </button>
+            <div className="absolute right-2 bottom-2 flex gap-1">
+              <button
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full transition"
+              >
+                <FaceSmileIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
             
             {showEmojiPicker && (
-              <div className="absolute bottom-12 right-0 z-10">
-                <EmojiPicker onEmojiClick={handleEmojiClick} />
+              <div className="absolute bottom-12 right-0 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 p-2">
+                <div className="grid grid-cols-8 gap-1">
+                  {commonEmojis.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleEmojiClick(emoji)}
+                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition text-xl"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
