@@ -1,4 +1,4 @@
-cat > contacts/ContactTable.tsx << 'EOF'
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -202,4 +202,4 @@ export default function ContactTable() {
     </div>
   );
 }
-EOF
+
