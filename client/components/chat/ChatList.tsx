@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect } from 'react';
 import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
@@ -23,7 +22,6 @@ interface ChatListProps {
 }
 
 export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) {
-  const { t } = useTranslation(['whatsapp']);
   const [chats, setChats] = useState<Chat[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -58,10 +56,10 @@ export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) 
       <div className="p-4 space-y-4">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="animate-pulse flex items-center gap-3">
-            <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+            <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
             <div className="flex-1">
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
             </div>
           </div>
         ))}
@@ -72,11 +70,11 @@ export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) 
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b">
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">{t('whatsapp:chat.chats')}</h2>
-          <button className="p-2 hover:bg-gray-100 rounded-full transition">
-            <PlusIcon className="h-5 w-5" />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Chats</h2>
+          <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition">
+            <PlusIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
           </button>
         </div>
         
@@ -85,10 +83,10 @@ export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) 
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
             type="text"
-            placeholder={t('whatsapp:chat.search')}
+            placeholder="Search chats..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
           />
         </div>
       </div>
@@ -96,7 +94,7 @@ export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto">
         {filteredChats.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
             No chats found
           </div>
         ) : (
@@ -104,8 +102,8 @@ export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) 
             <button
               key={chat.id}
               onClick={() => onSelectChat(chat.id)}
-              className={`w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition border-b ${
-                selectedChat === chat.id ? 'bg-blue-50' : ''
+              className={`w-full flex items-center gap-3 p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition border-b border-gray-100 dark:border-gray-800 ${
+                selectedChat === chat.id ? 'bg-blue-50 dark:bg-blue-900/30' : ''
               }`}
             >
               <div className="relative">
@@ -123,20 +121,20 @@ export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) 
                   </div>
                 )}
                 {chat.isOnline && (
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></span>
                 )}
               </div>
               
               <div className="flex-1 min-w-0 text-left">
                 <div className="flex justify-between items-baseline">
-                  <h3 className="font-semibold text-gray-900 truncate">
+                  <h3 className="font-semibold text-gray-900 dark:text-white truncate">
                     {chat.contactName || chat.contactNumber}
                   </h3>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
                     {formatDistanceToNow(new Date(chat.lastMessageTime), { addSuffix: true })}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 truncate">{chat.lastMessage}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{chat.lastMessage}</p>
               </div>
               
               {chat.unreadCount > 0 && (
