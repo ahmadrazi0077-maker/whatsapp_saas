@@ -1,7 +1,7 @@
+cat > contacts/ContactTable.tsx << 'EOF'
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect } from 'react';
 import { MagnifyingGlassIcon, PlusIcon, TrashIcon, PencilIcon, TagIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
@@ -17,11 +17,9 @@ interface Contact {
 }
 
 export default function ContactTable() {
-  const { t } = useTranslation(['contacts']);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showImportModal, setShowImportModal] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
 
   useEffect(() => {
@@ -42,7 +40,6 @@ export default function ContactTable() {
 
   const deleteContact = async (id: string) => {
     if (!confirm('Delete this contact?')) return;
-    
     try {
       await fetch(`/api/contacts/${id}`, { method: 'DELETE' });
       toast.success('Contact deleted');
@@ -55,7 +52,6 @@ export default function ContactTable() {
   const deleteMultiple = async () => {
     if (selectedContacts.length === 0) return;
     if (!confirm(`Delete ${selectedContacts.length} contacts?`)) return;
-    
     try {
       await fetch('/api/contacts/bulk-delete', {
         method: 'POST',
@@ -99,7 +95,7 @@ export default function ContactTable() {
             placeholder="Search contacts..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
           />
         </div>
         
@@ -112,10 +108,7 @@ export default function ContactTable() {
               Delete ({selectedContacts.length})
             </button>
           )}
-          <button
-            onClick={() => setShowImportModal(true)}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
+          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
             Import
           </button>
           <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
@@ -126,9 +119,9 @@ export default function ContactTable() {
       </div>
 
       {/* Contacts Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
             <tr>
               <th className="px-4 py-3 w-12">
                 <input
@@ -138,18 +131,17 @@ export default function ContactTable() {
                   className="h-4 w-4 text-blue-600 rounded"
                 />
               </th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Name</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Phone Number</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Email</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Tags</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Messages</th>
-              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Last Active</th>
-              <th className="px-4 py-3 text-right text-sm font-medium text-gray-700">Actions</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Name</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Email</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Tags</th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Messages</th>
+              <th className="px-4 py-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {filteredContacts.map((contact) => (
-              <tr key={contact.id} className="hover:bg-gray-50">
+              <tr key={contact.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                 <td className="px-4 py-3">
                   <input
                     type="checkbox"
@@ -165,36 +157,36 @@ export default function ContactTable() {
                   />
                 </td>
                 <td className="px-4 py-3">
-                  <div className="font-medium">{contact.name || '—'}</div>
+                  <div className="font-medium dark:text-white">{contact.name || '—'}</div>
                   {contact.company && (
-                    <div className="text-xs text-gray-500">{contact.company}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{contact.company}</div>
                   )}
                 </td>
-                <td className="px-4 py-3 font-mono text-sm">{contact.phoneNumber}</td>
-                <td className="px-4 py-3 text-sm">{contact.email || '—'}</td>
+                <td className="px-4 py-3 font-mono text-sm dark:text-gray-300">{contact.phoneNumber}</td>
+                <td className="px-4 py-3 text-sm dark:text-gray-300">{contact.email || '—'}</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
                     {contact.tags.map(tag => (
-                      <span key={tag} className="px-2 py-0.5 bg-gray-100 rounded-full text-xs">
+                      <span key={tag} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full text-xs dark:text-gray-300">
                         {tag}
                       </span>
                     ))}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-sm">{contact.messageCount}</td>
-                <td className="px-4 py-3 text-sm">
-                  {contact.lastMessageAt ? new Date(contact.lastMessageAt).toLocaleDateString() : 'Never'}
-                </td>
+                <td className="px-4 py-3 text-sm dark:text-gray-300">{contact.messageCount}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex gap-2 justify-end">
-                    <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                    <button className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded">
                       <PencilIcon className="h-4 w-4" />
                     </button>
-                    <button className="p-1 text-red-600 hover:bg-red-50 rounded">
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                    <button className="p-1 text-green-600 hover:bg-green-50 rounded">
+                    <button className="p-1 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded">
                       <TagIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => deleteContact(contact.id)}
+                      className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                    >
+                      <TrashIcon className="h-4 w-4" />
                     </button>
                   </div>
                 </td>
@@ -205,10 +197,11 @@ export default function ContactTable() {
         
         {filteredContacts.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No contacts found</p>
+            <p className="text-gray-500 dark:text-gray-400">No contacts found</p>
           </div>
         )}
       </div>
     </div>
   );
 }
+EOF
