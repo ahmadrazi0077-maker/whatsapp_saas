@@ -12,9 +12,6 @@ export const metadata: Metadata = {
   keywords: 'whatsapp marketing, bulk whatsapp, whatsapp automation, business communication',
   authors: [{ name: 'WhatsApp SaaS' }],
   viewport: 'width=device-width, initial-scale=1',
-  icons: {
-    icon: '/favicon.ico',
-  },
 };
 
 export default function RootLayout({
@@ -51,7 +48,7 @@ export default function RootLayout({
               },
             }}
           />
-        </Toasters>
+        </Providers>
       </body>
     </html>
   );
