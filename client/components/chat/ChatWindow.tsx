@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Socket } from 'socket.io-client';
 import MessageBubble from './MessageBubble';
 import MessageInput from './MessageInput';
@@ -170,7 +170,7 @@ export default function ChatWindow({ chatId, socket, onBack }: ChatWindowProps) 
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
-          <p className="text-gray-500">Loading conversation...</p>
+          <p className="text-gray-500 dark:text-gray-400">Loading conversation...</p>
         </div>
       </div>
     );
@@ -184,7 +184,7 @@ export default function ChatWindow({ chatId, socket, onBack }: ChatWindowProps) 
           {onBack && (
             <button
               onClick={onBack}
-              className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
             >
               <ChevronLeftIcon className="h-5 w-5" />
             </button>
@@ -204,14 +204,14 @@ export default function ChatWindow({ chatId, socket, onBack }: ChatWindowProps) 
               </div>
             )}
             {contact?.isOnline && (
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></span>
             )}
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white">
               {contact?.name || contact?.phoneNumber}
             </h3>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               {contact?.isOnline 
                 ? 'Online' 
                 : contact?.lastSeen 
@@ -241,7 +241,7 @@ export default function ChatWindow({ chatId, socket, onBack }: ChatWindowProps) 
         ))}
         {isTyping && (
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+            <div className="w-8 h-8 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
             <div className="bg-white dark:bg-gray-800 rounded-lg px-4 py-2 shadow">
               <div className="flex gap-1">
                 <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
