@@ -27,11 +27,6 @@
     "framer-motion": "^11.3.19",
     "react-hook-form": "^7.52.1",
     "zod": "^3.23.8",
-    "react-i18next": "^14.1.2",
-    "i18next": "^23.12.2",
-    "i18next-browser-languagedetector": "^8.0.0",
-    "emoji-picker-react": "^4.11.1",
-    "react-dropzone": "^14.2.3",
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.4.0",
     "class-variance-authority": "^0.7.0"
