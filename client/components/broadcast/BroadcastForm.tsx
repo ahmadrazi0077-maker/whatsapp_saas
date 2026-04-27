@@ -1,16 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useState, useEffect } from 'react';
 import { DevicePhoneMobileIcon, UsersIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 interface BroadcastFormProps {
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }
 
 export default function BroadcastForm({ onSuccess }: BroadcastFormProps) {
-  const { t } = useTranslation(['broadcast']);
   const [loading, setLoading] = useState(false);
   const [contacts, setContacts] = useState<any[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
@@ -84,7 +82,7 @@ export default function BroadcastForm({ onSuccess }: BroadcastFormProps) {
         setMessage('');
         setSelectedContacts([]);
         setSelectedList('');
-        onSuccess();
+        onSuccess?.();
       } else {
         throw new Error('Failed to create broadcast');
       }
@@ -107,8 +105,8 @@ export default function BroadcastForm({ onSuccess }: BroadcastFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
       {/* Select Recipients */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
           <UsersIcon className="h-5 w-5" />
           Select Recipients
         </h3>
@@ -116,10 +114,10 @@ export default function BroadcastForm({ onSuccess }: BroadcastFormProps) {
         {/* Broadcast Lists */}
         {broadcastLists.length > 0 && (
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Select a List</label>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Select a List</label>
             <div className="space-y-2">
               {broadcastLists.map(list => (
-                <label key={list.id} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <label key={list.id} className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                   <input
                     type="radio"
                     name="recipientType"
@@ -131,8 +129,8 @@ export default function BroadcastForm({ onSuccess }: BroadcastFormProps) {
                     className="h-4 w-4 text-blue-600"
                   />
                   <div>
-                    <p className="font-medium">{list.name}</p>
-                    <p className="text-sm text-gray-500">{list.contactCount} contacts</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{list.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{list.contactCount} contacts</p>
                   </div>
                 </label>
               ))}
@@ -142,10 +140,10 @@ export default function BroadcastForm({ onSuccess }: BroadcastFormProps) {
         
         {/* Individual Contacts */}
         <div>
-          <label className="block text-sm font-medium mb-2">Or Select Individual Contacts</label>
-          <div className="max-h-64 overflow-y-auto border rounded-lg divide-y">
+          <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Or Select Individual Contacts</label>
+          <div className="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
             {contacts.map(contact => (
-              <label key={contact.id} className="flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50">
+              <label key={contact.id} className="flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                 <input
                   type="checkbox"
                   checked={selectedContacts.includes(contact.id)}
@@ -153,38 +151,38 @@ export default function BroadcastForm({ onSuccess }: BroadcastFormProps) {
                   className="h-4 w-4 text-blue-600 rounded"
                 />
                 <div>
-                  <p className="font-medium">{contact.name || contact.phoneNumber}</p>
-                  {contact.name && <p className="text-sm text-gray-500">{contact.phoneNumber}</p>}
+                  <p className="font-medium text-gray-900 dark:text-white">{contact.name || contact.phoneNumber}</p>
+                  {contact.name && <p className="text-sm text-gray-500 dark:text-gray-400">{contact.phoneNumber}</p>}
                 </div>
               </label>
             ))}
           </div>
         </div>
         
-        <p className="text-sm text-gray-500 mt-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
           Selected: {selectedList ? `List (${broadcastLists.find(l => l.id === selectedList)?.contactCount} contacts)` : `${selectedContacts.length} contacts`}
         </p>
       </div>
       
       {/* Message */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h3 className="text-lg font-semibold mb-4">Message Content</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Message Content</h3>
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={6}
           placeholder="Type your broadcast message here... Use {name} to personalize"
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
           required
         />
-        <p className="text-sm text-gray-500 mt-2">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
           Tip: Use {'{name}'} to insert the contact's name
         </p>
       </div>
       
       {/* Schedule */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h3 className="text-lg font-semibold mb-4">Schedule</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Schedule</h3>
         <div className="space-y-4">
           <label className="flex items-center gap-3">
             <input
@@ -194,7 +192,7 @@ export default function BroadcastForm({ onSuccess }: BroadcastFormProps) {
               onChange={() => setScheduleType('now')}
               className="h-4 w-4 text-blue-600"
             />
-            <span>Send now</span>
+            <span className="text-gray-700 dark:text-gray-300">Send now</span>
           </label>
           
           <label className="flex items-center gap-3">
@@ -205,28 +203,28 @@ export default function BroadcastForm({ onSuccess }: BroadcastFormProps) {
               onChange={() => setScheduleType('later')}
               className="h-4 w-4 text-blue-600"
             />
-            <span>Schedule for later</span>
+            <span className="text-gray-700 dark:text-gray-300">Schedule for later</span>
           </label>
           
           {scheduleType === 'later' && (
             <div className="flex gap-4 ml-6">
               <div className="flex-1">
-                <label className="block text-sm font-medium mb-1">Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
                 <input
                   type="date"
                   value={scheduledDate}
                   onChange={(e) => setScheduledDate(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   required
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-sm font-medium mb-1">Time</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Time</label>
                 <input
                   type="time"
                   value={scheduledTime}
                   onChange={(e) => setScheduledTime(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   required
                 />
               </div>
