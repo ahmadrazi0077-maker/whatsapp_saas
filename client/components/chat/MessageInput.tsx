@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { PaperClipIcon, FaceSmileIcon, MicrophoneIcon } from '@heroicons/react/24/outline';
-import EmojiPicker from 'emoji-picker-react';
+import React, { useState, useRef } from 'react';
+import { PaperClipIcon, FaceSmileIcon } from '@heroicons/react/24/outline';
 
 interface MessageInputProps {
   onSendMessage: (message: string) => void;
@@ -11,7 +10,6 @@ interface MessageInputProps {
 
 export default function MessageInput({ onSendMessage, onTyping }: MessageInputProps) {
   const [message, setMessage] = useState('');
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -19,7 +17,6 @@ export default function MessageInput({ onSendMessage, onTyping }: MessageInputPr
     if (message.trim()) {
       onSendMessage(message);
       setMessage('');
-      setShowEmojiPicker(false);
       
       if (inputRef.current) {
         inputRef.current.style.height = 'auto';
@@ -43,19 +40,14 @@ export default function MessageInput({ onSendMessage, onTyping }: MessageInputPr
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
   };
   
-  const onEmojiClick = (emojiObject: any) => {
-    setMessage(prev => prev + emojiObject.emoji);
-    inputRef.current?.focus();
-  };
-  
   return (
-    <div className="p-4 border-t bg-white">
+    <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       <form onSubmit={handleSubmit} className="flex items-end gap-2">
         <button
           type="button"
-          className="p-2 hover:bg-gray-100 rounded-full transition"
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
         >
-          <PaperClipIcon className="h-5 w-5 text-gray-500" />
+          <PaperClipIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
         </button>
         
         <div className="relative flex-1">
@@ -66,23 +58,16 @@ export default function MessageInput({ onSendMessage, onTyping }: MessageInputPr
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             rows={1}
-            className="w-full px-4 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 max-h-32"
-            style={{ minHeight: '40px' }}
+            className="w-full px-4 py-2 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            style={{ minHeight: '40px', maxHeight: '120px' }}
           />
           
           <button
             type="button"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className="absolute right-2 bottom-2 p-1 hover:bg-gray-100 rounded-full transition"
+            className="absolute right-2 bottom-2 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full transition"
           >
-            <FaceSmileIcon className="h-5 w-5 text-gray-500" />
+            <FaceSmileIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
           </button>
-          
-          {showEmojiPicker && (
-            <div className="absolute bottom-12 right-0 z-10">
-              <EmojiPicker onEmojiClick={onEmojiClick} />
-            </div>
-          )}
         </div>
         
         <button
