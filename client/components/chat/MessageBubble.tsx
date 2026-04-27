@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { CheckIcon, ClockIcon } from '@heroicons/react/24/solid';
 import { format } from 'date-fns';
 
@@ -44,7 +45,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         className={`max-w-[70%] rounded-lg px-4 py-2 ${
           isOwn
             ? 'bg-blue-600 text-white'
-            : 'bg-white text-gray-900 shadow'
+            : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow'
         }`}
       >
         {message.messageType === 'text' && (
