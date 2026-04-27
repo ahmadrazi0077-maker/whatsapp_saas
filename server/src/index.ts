@@ -7,6 +7,17 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import { setupMessageHandlers } from './socket/handlers/messageHandler';
+import { setupTypingHandlers } from './socket/handlers/typingHandler';
+import authRoutes from './routes/auth.routes';
+import whatsappRoutes from './routes/whatsapp.routes';
+import messageRoutes from './routes/messages.routes';
+import contactRoutes from './routes/contacts.routes';
+import broadcastRoutes from './routes/broadcast.routes';
+import automationRoutes from './routes/automation.routes';
+import analyticsRoutes from './routes/analytics.routes';
+import { errorHandler } from './middleware/errorHandler';
+import { logger } from './utils/logger';
 
 dotenv.config();
 
@@ -14,147 +25,77 @@ const app = express();
 const httpServer = createServer(app);
 const prisma = new PrismaClient();
 
-// CORS configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
-
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-}));
-app.use(helmet());
-app.use(compression());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP',
-});
-app.use('/api/', limiter);
-
-// Socket.io
+// Socket.IO setup
 const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins,
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
     credentials: true,
   },
 });
 
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-  
-  socket.on('join-conversation', (conversationId: string) => {
-    socket.join(`conv-${conversationId}`);
-  });
-  
-  socket.on('send-message', async (data) => {
-    io.to(`conv-${data.conversationId}`).emit('new-message', data);
-  });
-  
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
+// Middleware
+app.use(helmet());
+app.use(compression());
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  credentials: true,
+}));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: 'Too many requests from this IP',
 });
+app.use('/api/', limiter);
+
+// Request logging
+app.use((req, res, next) => {
+  logger.info(`${req.method} ${req.path}`);
+  next();
+});
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/contacts', contactRoutes);
+app.use('/api/broadcast', broadcastRoutes);
+app.use('/api/automation', automationRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV,
+  });
 });
 
-// Auth routes
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const { email, password, name, workspaceName } = req.body;
-    
-    // Create workspace
-    const workspace = await prisma.workspace.create({
-      data: {
-        name: workspaceName || `${name}'s Workspace`,
-        slug: workspaceName?.toLowerCase().replace(/[^a-z0-9]/g, '-') || `${Date.now()}`,
-      },
-    });
-    
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: await bcrypt.hash(password, 10),
-        name,
-        workspaceId: workspace.id,
-      },
-    });
-    
-    // Generate JWT
-    const token = jwt.sign(
-      { userId: user.id, workspaceId: workspace.id },
-      process.env.JWT_SECRET!,
-      { expiresIn: '7d' }
-    );
-    
-    res.json({ token, user: { id: user.id, email, name, workspaceId: workspace.id } });
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ error: 'Registration failed' });
-  }
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  logger.info(`Client connected: ${socket.id}`);
+  
+  setupMessageHandlers(io, socket);
+  setupTypingHandlers(io, socket);
+  
+  socket.on('disconnect', () => {
+    logger.info(`Client disconnected: ${socket.id}`);
+  });
 });
 
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    
-    const token = jwt.sign(
-      { userId: user.id, workspaceId: user.workspaceId },
-      process.env.JWT_SECRET!,
-      { expiresIn: '7d' }
-    );
-    
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, workspaceId: user.workspaceId } });
-  } catch (error) {
-    res.status(500).json({ error: 'Login failed' });
-  }
-});
+// Error handling
+app.use(errorHandler);
 
-// WhatsApp routes
-app.get('/api/whatsapp/devices', async (req, res) => {
-  try {
-    const devices = await prisma.device.findMany();
-    res.json(devices);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch devices' });
-  }
-});
-
-app.post('/api/whatsapp/connect', async (req, res) => {
-  try {
-    const device = await prisma.device.create({
-      data: {
-        name: `Device ${Date.now()}`,
-        status: 'CONNECTING',
-        workspaceId: req.body.workspaceId || 'default',
-      },
-    });
-    res.json({ deviceId: device.id, status: 'CONNECTING' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to connect device' });
-  }
-});
-
-// Start server
 const PORT = process.env.PORT || 4000;
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📡 WebSocket server ready`);
-  console.log(`🗄️ Database connected`);
+  logger.info(`🚀 Server running on http://localhost:${PORT}`);
+  logger.info(`📡 WebSocket server ready`);
+  logger.info(`🗄️ Database connected`);
 });
+
+export { io, prisma };
