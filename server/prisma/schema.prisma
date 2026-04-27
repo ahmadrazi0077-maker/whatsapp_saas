@@ -7,5 +7,128 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Copy the full schema from the SQL above into Prisma format
-// Or use the SQL directly since Supabase works with raw SQL
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          String    @default("USER")
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  devices       Device[]
+  messages      Message[]
+}
+
+model Workspace {
+  id            String    @id @default(cuid())
+  name          String
+  slug          String    @unique
+  plan          String    @default("FREE")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  users         User[]
+  devices       Device[]
+  contacts      Contact[]
+  conversations Conversation[]
+}
+
+model Device {
+  id            String    @id @default(cuid())
+  name          String?
+  phoneNumber   String?
+  status        String    @default("DISCONNECTED")
+  qrCode        String?
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  conversations Conversation[]
+  messages      Message[]
+}
+
+model Contact {
+  id            String    @id @default(cuid())
+  phoneNumber   String
+  name          String?
+  email         String?
+  tags          String[]
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  conversations Conversation[]
+  messages      Message[]
+}
+
+model Conversation {
+  id            String    @id @default(cuid())
+  contactId     String
+  contact       Contact   @relation(fields: [contactId], references: [id])
+  deviceId      String
+  device        Device    @relation(fields: [deviceId], references: [id])
+  status        String    @default("ACTIVE")
+  lastMessage   String?
+  lastMessageAt DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  messages      Message[]
+}
+
+model Message {
+  id            String    @id @default(cuid())
+  messageId     String?   @unique
+  conversationId String
+  conversation  Conversation @relation(fields: [conversationId], references: [id])
+  body          String    @db.Text
+  fromMe        Boolean   @default(false)
+  status        String    @default("SENT")
+  messageType   String    @default("TEXT")
+  mediaUrl      String?
+  timestamp     DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  
+  senderId      String?
+  sender        User?     @relation(fields: [senderId], references: [id])
+  contactId     String?
+  contact       Contact?  @relation(fields: [contactId], references: [id])
+  deviceId      String?
+  device        Device?   @relation(fields: [deviceId], references: [id])
+}
+
+model BroadcastCampaign {
+  id            String    @id @default(cuid())
+  name          String
+  message       String    @db.Text
+  status        String    @default("DRAFT")
+  scheduledFor  DateTime?
+  sentCount     Int       @default(0)
+  totalRecipients Int     @default(0)
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+  deviceId      String
+  device        Device    @relation(fields: [deviceId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model AutoReplyRule {
+  id            String    @id @default(cuid())
+  name          String
+  keyword       String
+  response      String    @db.Text
+  matchType     String    @default("CONTAINS")
+  isActive      Boolean   @default(true)
+  deviceId      String
+  device        Device    @relation(fields: [deviceId], references: [id])
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
