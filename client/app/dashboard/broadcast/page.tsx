@@ -248,4 +248,122 @@ export default function BroadcastPage() {
                     type="date"
                     required
                     value={formData.scheduledDate}
-                    onChange={(e) => setFormData({ ...formData
+                    onChange={(e) => setFormData({ ...formData, scheduledDate: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Time
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={formData.scheduledTime}
+                    onChange={(e) => setFormData({ ...formData, scheduledTime: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                Creating Broadcast...
+              </>
+            ) : (
+              <>
+                <EnvelopeIcon className="h-5 w-5" />
+                Create Broadcast
+              </>
+            )}
+          </button>
+        </motion.form>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          {campaigns.length === 0 ? (
+            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl">
+              <EnvelopeIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No campaigns yet</h3>
+              <p className="text-gray-500 dark:text-gray-400">Create your first broadcast campaign</p>
+            </div>
+          ) : (
+            campaigns.map((campaign, index) => (
+              <motion.div
+                key={campaign.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
+                      {campaign.name || `Campaign ${format(new Date(campaign.createdAt), 'MMM d, yyyy')}`}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(campaign.status)}`}>
+                        {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+                      </span>
+                      {campaign.scheduledFor && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          Scheduled for {format(new Date(campaign.scheduledFor), 'MMM d, yyyy h:mm a')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {campaign.status === 'scheduled' && (
+                    <button
+                      onClick={() => cancelCampaign(campaign.id)}
+                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
+                
+                <p className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-2">{campaign.message}</p>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">Progress</span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {campaign.sent} / {campaign.recipients}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 rounded-full h-2 transition-all"
+                      style={{ width: `${(campaign.sent / campaign.recipients) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                
+                {campaign.status === 'sending' && (
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      Sending in progress...
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            ))
+          )}
+        </motion.div>
+      )}
+    </div>
+  );
+}
