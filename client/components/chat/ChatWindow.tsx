@@ -12,16 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-
-interface Message {
-  id: string;
-  body: string;
-  fromMe: boolean;
-  timestamp: Date;
-  status: 'sent' | 'delivered' | 'read';
-  messageType: 'text' | 'image' | 'audio' | 'video' | 'document';
-  mediaUrl?: string;
-}
+import { Message, Contact } from '@/types/chat';
 
 interface ChatWindowProps {
   chatId: string;
@@ -29,9 +20,18 @@ interface ChatWindowProps {
   onBack?: () => void;
 }
 
+interface ContactInfo {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  avatar?: string;
+  isOnline: boolean;
+  lastSeen?: Date;
+}
+
 export default function ChatWindow({ chatId, socket, onBack }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [contact, setContact] = useState<any>(null);
+  const [contact, setContact] = useState<ContactInfo | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -75,9 +75,23 @@ export default function ChatWindow({ chatId, socket, onBack }: ChatWindowProps) 
     try {
       const response = await fetch(`/api/contacts/${chatId}`);
       const data = await response.json();
-      setContact(data);
+      setContact({
+        id: data.id,
+        name: data.name || data.phoneNumber,
+        phoneNumber: data.phoneNumber,
+        avatar: data.profilePic,
+        isOnline: data.isOnline || false,
+        lastSeen: data.lastSeen ? new Date(data.lastSeen) : undefined,
+      });
     } catch (error) {
       console.error('Failed to fetch contact:', error);
+      // Set fallback contact
+      setContact({
+        id: chatId,
+        name: 'Contact',
+        phoneNumber: 'Unknown',
+        isOnline: false,
+      });
     }
   };
 
@@ -93,6 +107,7 @@ export default function ChatWindow({ chatId, socket, onBack }: ChatWindowProps) 
   };
 
   const handleNewMessage = (message: Message) => {
+    // Check if message belongs to this conversation
     if (message.conversationId === chatId) {
       setMessages(prev => [...prev, message]);
       if (!message.fromMe) {
@@ -119,29 +134,26 @@ export default function ChatWindow({ chatId, socket, onBack }: ChatWindowProps) 
     }
   };
 
-  const handleSendMessage = async (text: string, media?: File) => {
-    if (!text.trim() && !media) return;
+  const handleSendMessage = async (text: string) => {
+    if (!text.trim()) return;
     
     const tempMessage: Message = {
       id: `temp-${Date.now()}`,
+      conversationId: chatId,
       body: text,
       fromMe: true,
       timestamp: new Date(),
       status: 'sent',
-      messageType: media ? 'image' : 'text',
+      messageType: 'text',
     };
     
     setMessages(prev => [...prev, tempMessage]);
     
     try {
-      const formData = new FormData();
-      formData.append('chatId', chatId);
-      formData.append('message', text);
-      if (media) formData.append('media', media);
-      
       const response = await fetch('/api/messages/send', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId, message: text }),
       });
       
       const sentMessage = await response.json();
@@ -215,7 +227,7 @@ export default function ChatWindow({ chatId, socket, onBack }: ChatWindowProps) 
               {contact?.isOnline 
                 ? 'Online' 
                 : contact?.lastSeen 
-                  ? `Last seen ${formatDistanceToNow(new Date(contact.lastSeen), { addSuffix: true })}`
+                  ? `Last seen ${formatDistanceToNow(contact.lastSeen, { addSuffix: true })}`
                   : 'Offline'}
             </p>
           </div>
