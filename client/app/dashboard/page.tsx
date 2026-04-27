@@ -12,10 +12,7 @@ import {
   UserPlusIcon,
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
-import StatsCard from '@/components/dashboard/StatsCard';
-import RecentChats from '@/components/dashboard/RecentChats';
-import MessageChart from '@/components/dashboard/MessageChart';
-import DeviceStatus from '@/components/shared/DeviceStatus';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -32,178 +29,133 @@ interface DashboardStats {
   chatsTrend: number;
 }
 
+const StatCard = ({ title, value, icon: Icon, trend, color, delay }: any) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay, duration: 0.3 }}
+    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 hover:shadow-md transition-all"
+  >
+    <div className="flex items-center justify-between">
+      <div className={`p-3 rounded-lg bg-${color}-100 dark:bg-${color}-900/30 text-${color}-600 dark:text-${color}-400`}>
+        <Icon className="h-6 w-6" />
+      </div>
+      <div className="flex items-center gap-1 text-sm font-medium text-green-600 dark:text-green-400">
+        <ArrowTrendingUpIcon className="h-4 w-4" />
+        <span>{trend}</span>
+      </div>
+    </div>
+    <div className="mt-4">
+      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{value}</h3>
+      <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{title}</p>
+    </div>
+  </motion.div>
+);
+
 export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
-    totalMessages: 0,
-    totalContacts: 0,
-    activeChats: 0,
-    responseRate: 0,
-    avgResponseTime: 0,
-    satisfactionRate: 0,
-    messagesTrend: 0,
-    contactsTrend: 0,
-    chatsTrend: 0,
+    totalMessages: 12547,
+    totalContacts: 342,
+    activeChats: 28,
+    responseRate: 94,
+    avgResponseTime: 45,
+    satisfactionRate: 98,
+    messagesTrend: 12,
+    contactsTrend: 8,
+    chatsTrend: 5,
   });
-  const [loading, setLoading] = useState(true);
-  const [chartData, setChartData] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      const response = await fetch('/api/analytics/dashboard');
-      const data = await response.json();
-      setStats(data.stats);
-      setChartData(data.chartData);
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-      toast.error('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+  const cards = [
+    { title: 'Total Messages', value: stats.totalMessages.toLocaleString(), icon: ChatBubbleLeftRightIcon, trend: `+${stats.messagesTrend}%`, color: 'blue', delay: 0 },
+    { title: 'Total Contacts', value: stats.totalContacts.toLocaleString(), icon: UsersIcon, trend: `+${stats.contactsTrend}%`, color: 'green', delay: 0.1 },
+    { title: 'Active Chats', value: stats.activeChats.toString(), icon: DevicePhoneMobileIcon, trend: `+${stats.chatsTrend}%`, color: 'purple', delay: 0.2 },
+    { title: 'Response Rate', value: `${stats.responseRate}%`, icon: ArrowTrendingUpIcon, trend: '+3%', color: 'orange', delay: 0.3 },
+    { title: 'Avg Response Time', value: `${stats.avgResponseTime}s`, icon: ClockIcon, trend: '-2s', color: 'red', delay: 0.4 },
+    { title: 'Satisfaction Rate', value: `${stats.satisfactionRate}%`, icon: CheckBadgeIcon, trend: '+5%', color: 'indigo', delay: 0.5 },
+  ];
 
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg p-6 text-white">
-        <div className="flex justify-between items-center">
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-lg p-6 text-white"
+      >
+        <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-bold mb-2">
-              Welcome back, {user?.name}! 👋
+              Welcome back, {user?.name?.split(' ')[0]}! 👋
             </h1>
             <p className="text-blue-100">
               Here's what's happening with your WhatsApp business today.
             </p>
           </div>
           <Link
-            href="/broadcast"
-            className="bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 transition"
+            href="/dashboard/broadcast"
+            className="bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 transition flex items-center gap-2"
           >
-            <EnvelopeIcon className="h-5 w-5 inline mr-2" />
+            <EnvelopeIcon className="h-5 w-5" />
             Send Broadcast
           </Link>
         </div>
-      </div>
+      </motion.div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatsCard
-          title="Total Messages"
-          value={stats.totalMessages.toLocaleString()}
-          icon={ChatBubbleLeftRightIcon}
-          trend={`+${stats.messagesTrend}%`}
-          color="blue"
-        />
-        <StatsCard
-          title="Total Contacts"
-          value={stats.totalContacts.toLocaleString()}
-          icon={UsersIcon}
-          trend={`+${stats.contactsTrend}%`}
-          color="green"
-        />
-        <StatsCard
-          title="Active Chats"
-          value={stats.activeChats.toString()}
-          icon={DevicePhoneMobileIcon}
-          trend={`+${stats.chatsTrend}%`}
-          color="purple"
-        />
-        <StatsCard
-          title="Response Rate"
-          value={`${stats.responseRate}%`}
-          icon={ArrowTrendingUpIcon}
-          trend="+3%"
-          color="orange"
-        />
-        <StatsCard
-          title="Avg Response Time"
-          value={`${stats.avgResponseTime}s`}
-          icon={ClockIcon}
-          trend="-2s"
-          color="red"
-          trendDirection="down"
-        />
-        <StatsCard
-          title="Satisfaction Rate"
-          value={`${stats.satisfactionRate}%`}
-          icon={CheckBadgeIcon}
-          trend="+5%"
-          color="indigo"
-        />
+        {cards.map((card) => (
+          <StatCard key={card.title} {...card} />
+        ))}
       </div>
 
-      {/* Charts and Device Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Message Volume Chart */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Message Volume</h2>
-            <select className="border rounded-lg px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500">
-              <option>Last 7 days</option>
-              <option>Last 30 days</option>
-              <option>Last 3 months</option>
-            </select>
-          </div>
-          <MessageChart data={chartData} />
-        </div>
-
-        {/* Device Status */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Device Status</h2>
-          <DeviceStatus />
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white"
+        >
+          <UserPlusIcon className="h-8 w-8 mb-3" />
+          <h3 className="font-semibold text-lg mb-1">Import Contacts</h3>
+          <p className="text-green-100 text-sm mb-4">Add contacts from CSV or Excel</p>
+          <button className="bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 text-sm transition">
+            Import Now →
+          </button>
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white"
+        >
+          <ChartBarIcon className="h-8 w-8 mb-3" />
+          <h3 className="font-semibold text-lg mb-1">Analytics Report</h3>
+          <p className="text-purple-100 text-sm mb-4">Download detailed analytics</p>
+          <button className="bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 text-sm transition">
+            Download Report →
+          </button>
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl p-6 text-white"
+        >
+          <DevicePhoneMobileIcon className="h-8 w-8 mb-3" />
+          <h3 className="font-semibold text-lg mb-1">Connect Device</h3>
+          <p className="text-orange-100 text-sm mb-4">Add a new WhatsApp device</p>
           <Link
-            href="/devices"
-            className="mt-4 inline-block text-blue-600 hover:text-blue-700 text-sm font-medium"
+            href="/dashboard/devices"
+            className="inline-block bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 text-sm transition"
           >
-            Manage Devices →
+            Connect Now →
           </Link>
-        </div>
-      </div>
-
-      {/* Recent Chats and Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Chats */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm">
-          <div className="p-6 border-b">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Chats</h2>
-          </div>
-          <RecentChats />
-        </div>
-
-        {/* Quick Actions */}
-        <div className="space-y-4">
-          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white">
-            <UserPlusIcon className="h-8 w-8 mb-3" />
-            <h3 className="font-semibold text-lg mb-1">Import Contacts</h3>
-            <p className="text-green-100 text-sm mb-4">Add contacts from CSV or Excel</p>
-            <button className="bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 text-sm transition">
-              Import Now →
-            </button>
-          </div>
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
-            <ChartBarIcon className="h-8 w-8 mb-3" />
-            <h3 className="font-semibold text-lg mb-1">Analytics Report</h3>
-            <p className="text-purple-100 text-sm mb-4">Download detailed analytics</p>
-            <button className="bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 text-sm transition">
-              Download Report →
-            </button>
-          </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
