@@ -161,4 +161,49 @@ export class AuthController {
         data: { name, avatar },
         select: {
           id: true,
-         
+          email: true,
+          name: true,
+          role: true,
+          workspaceId: true,
+          avatar: true,
+          createdAt: true,
+        },
+      });
+      
+      res.json(user);
+    } catch (error) {
+      console.error('Update profile error:', error);
+      res.status(500).json({ error: 'Failed to update profile' });
+    }
+  }
+  
+  async changePassword(req: Request, res: Response) {
+    try {
+      const { oldPassword, newPassword } = req.body;
+      
+      const user = await prisma.user.findUnique({
+        where: { id: req.userId },
+      });
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      const isValid = await bcrypt.compare(oldPassword, user.password);
+      if (!isValid) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
+      
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await prisma.user.update({
+        where: { id: req.userId },
+        data: { password: hashedPassword },
+      });
+      
+      res.json({ message: 'Password changed successfully' });
+    } catch (error) {
+      console.error('Change password error:', error);
+      res.status(500).json({ error: 'Failed to change password' });
+    }
+  }
+}
