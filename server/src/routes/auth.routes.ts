@@ -8,6 +8,7 @@ const authController = new AuthController();
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.get('/me', authenticate, authController.getMe);
-router.post('/logout', authenticate, authController.logout);
+router.put('/profile', authenticate, authController.updateProfile);
+router.post('/change-password', authenticate, authController.changePassword);
 
 export default router;
