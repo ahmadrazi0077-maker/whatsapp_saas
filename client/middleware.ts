@@ -2,19 +2,19 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('token')?.value || 
-                request.headers.get('authorization')?.replace('Bearer ', '');
+  const token = request.cookies.get('token')?.value;
+  const { pathname } = request.nextUrl;
+
+  // Public paths
+  const isAuthPage = pathname.startsWith('/auth/login') || pathname.startsWith('/auth/register');
+  const isPublicPath = pathname === '/' || pathname === '/_next' || pathname.startsWith('/api');
   
-  const isAuthPage = request.nextUrl.pathname === '/login' || 
-                     request.nextUrl.pathname === '/register';
-  
-  const isDashboardPage = request.nextUrl.pathname.startsWith('/dashboard') ||
-                         request.nextUrl.pathname.startsWith('/chats') ||
-                         request.nextUrl.pathname.startsWith('/devices');
+  // Protected paths
+  const isDashboardPath = pathname.startsWith('/dashboard');
 
   // Redirect logic
-  if (!token && isDashboardPage) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  if (!token && isDashboardPath) {
+    return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
   if (token && isAuthPage) {
@@ -25,5 +25,14 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public|api).*)',
+  ],
 };
