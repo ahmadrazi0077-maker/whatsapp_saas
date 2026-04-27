@@ -1,3 +1,4 @@
+cat > components/chat/ChatList.tsx << 'EOF'
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -28,8 +29,6 @@ export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) 
 
   useEffect(() => {
     fetchChats();
-    
-    // Poll for new messages every 5 seconds
     const interval = setInterval(fetchChats, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -69,7 +68,6 @@ export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) 
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Chats</h2>
@@ -78,7 +76,6 @@ export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) 
           </button>
         </div>
         
-        {/* Search */}
         <div className="relative">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
@@ -91,12 +88,9 @@ export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) 
         </div>
       </div>
       
-      {/* Chat List */}
       <div className="flex-1 overflow-y-auto">
         {filteredChats.length === 0 ? (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-            No chats found
-          </div>
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400">No chats found</div>
         ) : (
           filteredChats.map((chat) => (
             <button
@@ -108,13 +102,7 @@ export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) 
             >
               <div className="relative">
                 {chat.avatar ? (
-                  <Image
-                    src={chat.avatar}
-                    alt={chat.contactName}
-                    width={48}
-                    height={48}
-                    className="rounded-full"
-                  />
+                  <Image src={chat.avatar} alt={chat.contactName} width={48} height={48} className="rounded-full" />
                 ) : (
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-lg">
                     {chat.contactName?.[0]?.toUpperCase() || chat.contactNumber[0]}
@@ -149,3 +137,4 @@ export default function ChatList({ onSelectChat, selectedChat }: ChatListProps) 
     </div>
   );
 }
+EOF
