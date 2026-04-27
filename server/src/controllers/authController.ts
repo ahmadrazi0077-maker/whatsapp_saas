@@ -1,26 +1,12 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../index';
-import { z } from 'zod';
-
-const registerSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(6),
-  workspaceName: z.string().optional(),
-});
-
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string(),
-});
+import { prisma } from '../lib/prisma';
 
 export class AuthController {
   async register(req: Request, res: Response) {
     try {
-      const validatedData = registerSchema.parse(req.body);
-      const { email, password, name, workspaceName } = validatedData;
+      const { email, password, name, workspaceName } = req.body;
       
       // Check if user exists
       const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -66,10 +52,7 @@ export class AuthController {
       );
       
       res.json({ token, user });
-    } catch (error: any) {
-      if (error.name === 'ZodError') {
-        return res.status(400).json({ error: error.errors });
-      }
+    } catch (error) {
       console.error('Registration error:', error);
       res.status(500).json({ error: 'Registration failed' });
     }
@@ -77,8 +60,7 @@ export class AuthController {
   
   async login(req: Request, res: Response) {
     try {
-      const validatedData = loginSchema.parse(req.body);
-      const { email, password } = validatedData;
+      const { email, password } = req.body;
       
       const user = await prisma.user.findUnique({ 
         where: { email },
@@ -89,7 +71,6 @@ export class AuthController {
           password: true,
           role: true,
           workspaceId: true,
-          createdAt: true,
         },
       });
       
@@ -97,16 +78,10 @@ export class AuthController {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
       
-      const isValidPassword = await bcrypt.compare(password, user.password);
-      if (!isValidPassword) {
+      const isValid = await bcrypt.compare(password, user.password);
+      if (!isValid) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
-      
-      // Update last login
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLoginAt: new Date() },
-      });
       
       const token = jwt.sign(
         { userId: user.id, workspaceId: user.workspaceId },
@@ -116,10 +91,7 @@ export class AuthController {
       
       const { password: _, ...userWithoutPassword } = user;
       res.json({ token, user: userWithoutPassword });
-    } catch (error: any) {
-      if (error.name === 'ZodError') {
-        return res.status(400).json({ error: error.errors });
-      }
+    } catch (error) {
       console.error('Login error:', error);
       res.status(500).json({ error: 'Login failed' });
     }
@@ -127,17 +99,16 @@ export class AuthController {
   
   async getMe(req: Request, res: Response) {
     try {
+      const userId = (req as any).userId;
       const user = await prisma.user.findUnique({
-        where: { id: req.userId },
+        where: { id: userId },
         select: {
           id: true,
           email: true,
           name: true,
           role: true,
           workspaceId: true,
-          avatar: true,
           createdAt: true,
-          lastLoginAt: true,
         },
       });
       
@@ -149,61 +120,6 @@ export class AuthController {
     } catch (error) {
       console.error('Get me error:', error);
       res.status(500).json({ error: 'Failed to get user' });
-    }
-  }
-  
-  async updateProfile(req: Request, res: Response) {
-    try {
-      const { name, avatar } = req.body;
-      
-      const user = await prisma.user.update({
-        where: { id: req.userId },
-        data: { name, avatar },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          workspaceId: true,
-          avatar: true,
-          createdAt: true,
-        },
-      });
-      
-      res.json(user);
-    } catch (error) {
-      console.error('Update profile error:', error);
-      res.status(500).json({ error: 'Failed to update profile' });
-    }
-  }
-  
-  async changePassword(req: Request, res: Response) {
-    try {
-      const { oldPassword, newPassword } = req.body;
-      
-      const user = await prisma.user.findUnique({
-        where: { id: req.userId },
-      });
-      
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      
-      const isValid = await bcrypt.compare(oldPassword, user.password);
-      if (!isValid) {
-        return res.status(401).json({ error: 'Current password is incorrect' });
-      }
-      
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      await prisma.user.update({
-        where: { id: req.userId },
-        data: { password: hashedPassword },
-      });
-      
-      res.json({ message: 'Password changed successfully' });
-    } catch (error) {
-      console.error('Change password error:', error);
-      res.status(500).json({ error: 'Failed to change password' });
     }
   }
 }
