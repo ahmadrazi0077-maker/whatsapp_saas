@@ -1,16 +1,14 @@
 export interface Message {
   id: string;
-  conversationId: string;
-  senderId?: string;
-  contactId?: string;
+  conversationId?: string;
   body: string;
+  fromMe: boolean;
+  timestamp: Date;
+  status: 'sent' | 'delivered' | 'read' | 'failed';
   messageType: 'text' | 'image' | 'audio' | 'video' | 'document';
   mediaUrl?: string;
-  fromMe: boolean;
-  status: 'sent' | 'delivered' | 'read' | 'failed';
-  timestamp: Date;
-  readAt?: Date;
-  deliveredAt?: Date;
+  senderId?: string;
+  contactId?: string;
 }
 
 export interface Conversation {
