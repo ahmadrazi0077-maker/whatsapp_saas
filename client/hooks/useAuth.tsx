@@ -2,14 +2,13 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 interface User {
   id: string;
   name: string;
   email: string;
-  role: 'ADMIN' | 'MANAGER' | 'USER';
+  role: string;
   workspaceId: string;
   avatar?: string;
   createdAt: string;
@@ -22,14 +21,13 @@ interface AuthContextType {
   logout: () => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
-  changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
 }
 
 interface RegisterData {
   name: string;
   email: string;
   password: string;
-  workspaceName: string;
+  workspaceName?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -96,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('token');
     setUser(null);
     toast.success('Logged out successfully');
-    router.push('/login');
+    router.push('/auth/login');
   };
 
   const register = async (data: RegisterData) => {
@@ -145,30 +143,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const changePassword = async (oldPassword: string, newPassword: string) => {
-    try {
-      const response = await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({ oldPassword, newPassword }),
-      });
-
-      if (!response.ok) throw new Error('Password change failed');
-
-      toast.success('Password changed successfully');
-    } catch (error) {
-      toast.error('Failed to change password');
-      throw error;
-    }
-  };
-
   return (
-    <AuthContext.Provider
-      value={{ user, loading, login, logout, register, updateProfile, changePassword }}
-    >
+    <AuthContext.Provider value={{ user, loading, login, logout, register, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
