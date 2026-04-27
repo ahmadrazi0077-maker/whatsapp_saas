@@ -1,6 +1,5 @@
 
 import { forwardRef } from 'react';
-import { cn } from '@/lib/utils';
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -9,7 +8,7 @@ export interface ButtonProps
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'default', size = 'default', ...props }, ref) => {
+  ({ className, variant = 'default', size = 'default', children, ...props }, ref) => {
     const baseStyles = 'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
     
     const variants = {
@@ -28,16 +27,21 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       icon: 'h-10 w-10',
     };
     
+    const combinedClassName = [baseStyles, variants[variant], sizes[size], className]
+      .filter(Boolean)
+      .join(' ');
+    
     return (
       <button
-        className={cn(baseStyles, variants[variant], sizes[size], className)}
+        className={combinedClassName}
         ref={ref}
         {...props}
-      />
+      >
+        {children}
+      </button>
     );
   }
 );
 Button.displayName = 'Button';
 
 export { Button };
-
