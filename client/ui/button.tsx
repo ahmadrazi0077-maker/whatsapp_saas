@@ -1,4 +1,4 @@
-cat > ui/button.tsx << 'EOF'
+
 import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -40,4 +40,4 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = 'Button';
 
 export { Button };
-EOF
+
