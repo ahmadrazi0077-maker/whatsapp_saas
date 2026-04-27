@@ -3,16 +3,7 @@
 import React from 'react';
 import { CheckIcon, ClockIcon } from '@heroicons/react/24/solid';
 import { format } from 'date-fns';
-
-interface Message {
-  id: string;
-  body: string;
-  fromMe: boolean;
-  timestamp: Date;
-  status: 'sent' | 'delivered' | 'read';
-  messageType: 'text' | 'image' | 'audio' | 'video' | 'document';
-  mediaUrl?: string;
-}
+import { Message } from '@/types/chat';
 
 interface MessageBubbleProps {
   message: Message;
