@@ -24,9 +24,7 @@ interface DashboardStats {
   responseRate: number;
   avgResponseTime: number;
   satisfactionRate: number;
-  messagesTrend: number;
-  contactsTrend: number;
-  chatsTrend: number;
+  devices: number;
 }
 
 const StatCard = ({ title, value, icon: Icon, trend, color, delay }: any) => (
@@ -46,35 +44,68 @@ const StatCard = ({ title, value, icon: Icon, trend, color, delay }: any) => (
       </div>
     </div>
     <div className="mt-4">
-      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{value}</h3>
+      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{value.toLocaleString()}</h3>
       <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{title}</p>
     </div>
   </motion.div>
 );
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
-    totalMessages: 12547,
-    totalContacts: 342,
-    activeChats: 28,
-    responseRate: 94,
-    avgResponseTime: 45,
-    satisfactionRate: 98,
-    messagesTrend: 12,
-    contactsTrend: 8,
-    chatsTrend: 5,
+    totalMessages: 0,
+    totalContacts: 0,
+    activeChats: 0,
+    responseRate: 0,
+    avgResponseTime: 0,
+    satisfactionRate: 0,
+    devices: 0,
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/analytics/dashboard`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch dashboard data');
+      
+      const data = await response.json();
+      setStats(data.stats);
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+      // Don't show error toast - just use default values
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const cards = [
-    { title: 'Total Messages', value: stats.totalMessages.toLocaleString(), icon: ChatBubbleLeftRightIcon, trend: `+${stats.messagesTrend}%`, color: 'blue', delay: 0 },
-    { title: 'Total Contacts', value: stats.totalContacts.toLocaleString(), icon: UsersIcon, trend: `+${stats.contactsTrend}%`, color: 'green', delay: 0.1 },
-    { title: 'Active Chats', value: stats.activeChats.toString(), icon: DevicePhoneMobileIcon, trend: `+${stats.chatsTrend}%`, color: 'purple', delay: 0.2 },
+    { title: 'Total Messages', value: stats.totalMessages, icon: ChatBubbleLeftRightIcon, trend: '+12%', color: 'blue', delay: 0 },
+    { title: 'Total Contacts', value: stats.totalContacts, icon: UsersIcon, trend: '+8%', color: 'green', delay: 0.1 },
+    { title: 'Active Chats', value: stats.activeChats, icon: DevicePhoneMobileIcon, trend: '+5%', color: 'purple', delay: 0.2 },
     { title: 'Response Rate', value: `${stats.responseRate}%`, icon: ArrowTrendingUpIcon, trend: '+3%', color: 'orange', delay: 0.3 },
     { title: 'Avg Response Time', value: `${stats.avgResponseTime}s`, icon: ClockIcon, trend: '-2s', color: 'red', delay: 0.4 },
-    { title: 'Satisfaction Rate', value: `${stats.satisfactionRate}%`, icon: CheckBadgeIcon, trend: '+5%', color: 'indigo', delay: 0.5 },
+    { title: 'Devices', value: stats.devices, icon: DevicePhoneMobileIcon, trend: '+0%', color: 'indigo', delay: 0.5 },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -87,7 +118,7 @@ export default function DashboardPage() {
         <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-bold mb-2">
-              Welcome back, {user?.name?.split(' ')[0]}! 👋
+              Welcome back, {user?.name?.split(' ')[0] || 'User'}! 👋
             </h1>
             <p className="text-blue-100">
               Here's what's happening with your WhatsApp business today.
@@ -121,9 +152,12 @@ export default function DashboardPage() {
           <UserPlusIcon className="h-8 w-8 mb-3" />
           <h3 className="font-semibold text-lg mb-1">Import Contacts</h3>
           <p className="text-green-100 text-sm mb-4">Add contacts from CSV or Excel</p>
-          <button className="bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 text-sm transition">
+          <Link
+            href="/dashboard/contacts"
+            className="inline-block bg-white/20 hover:bg-white/30 rounded-lg px-4 py-2 text-sm transition"
+          >
             Import Now →
-          </button>
+          </Link>
         </motion.div>
         
         <motion.div
