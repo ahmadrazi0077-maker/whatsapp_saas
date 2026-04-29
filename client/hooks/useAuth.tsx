@@ -4,9 +4,6 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
-const SUPABASE_URL = 'https://xsxtbztyqjmlwfnibtdm.supabase.co'
-const EDGE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`
-
 interface User {
   id: string;
   name: string;
@@ -52,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = async (authToken: string) => {
     try {
-      const response = await fetch(`${EDGE_FUNCTIONS_URL}/auth-handler/me`, {
+      const response = await fetch('/api/auth/me', {
         headers: { 
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
@@ -63,13 +60,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = await response.json();
         setUser(userData);
       } else {
-        const error = await response.json();
-        console.error('Fetch user error:', error);
         localStorage.removeItem('token');
         setToken(null);
       }
     } catch (error) {
-      console.error('Network error:', error);
+      console.error('Fetch user error:', error);
       localStorage.removeItem('token');
       setToken(null);
     } finally {
@@ -79,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch(`${EDGE_FUNCTIONS_URL}/auth-handler/login`, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -112,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (data: RegisterData) => {
     try {
-      const response = await fetch(`${EDGE_FUNCTIONS_URL}/auth-handler/register`, {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
