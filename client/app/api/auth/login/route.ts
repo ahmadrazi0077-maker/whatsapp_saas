@@ -1,38 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+const SUPABASE_URL = 'https://xsxtbztyqjmlwfnibtdm.supabase.co'
+const EDGE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`
+
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, password } = body;
+    const body = await req.json()
     
-    // Validate input
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Missing email or password' },
-        { status: 400 }
-      );
-    }
+    const response = await fetch(`${EDGE_FUNCTIONS_URL}/auth-handler/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
     
-    // Mock login - In production, connect to your backend
-    const user = {
-      id: '1',
-      name: email.split('@')[0],
-      email,
-      role: 'USER',
-      workspaceId: 'workspace_1',
-    };
+    const data = await response.json()
     
-    const token = Buffer.from(JSON.stringify({ userId: user.id, email })).toString('base64');
-    
-    return NextResponse.json({
-      token,
-      user,
-    });
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Proxy error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
-    );
+    )
   }
 }
