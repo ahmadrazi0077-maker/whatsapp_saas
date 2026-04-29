@@ -1,31 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+const SUPABASE_URL = 'https://xsxtbztyqjmlwfnibtdm.supabase.co'
+const EDGE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`
+
+export async function GET(req: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const authHeader = req.headers.get('authorization')
     
-    const token = authHeader.split(' ')[1];
-    // Decode token and get user
-    // This is mock - in production, verify JWT
+    const response = await fetch(`${EDGE_FUNCTIONS_URL}/auth-handler/me`, {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader || '',
+        'Content-Type': 'application/json',
+      },
+    })
     
-    return NextResponse.json({
-      id: '1',
-      name: 'User',
-      email: 'user@example.com',
-      role: 'USER',
-      workspaceId: 'workspace_1',
-    });
+    const data = await response.json()
+    
+    return NextResponse.json(data, { status: response.status })
   } catch (error) {
-    console.error('Auth error:', error);
+    console.error('Proxy error:', error)
     return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }
