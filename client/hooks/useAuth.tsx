@@ -16,11 +16,11 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => void;
   register: (data: RegisterData) => Promise<void>;
-  updateProfile: (data: Partial<User>) => Promise<void>;
 }
 
 interface RegisterData {
@@ -31,36 +31,39 @@ interface RegisterData {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    checkAuth();
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
+      fetchUser(storedToken);
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  const checkAuth = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
+  const fetchUser = async (authToken: string) => {
     try {
-      const response = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${authToken}` },
       });
-
+      
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
       } else {
         localStorage.removeItem('token');
+        setToken(null);
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('Fetch user error:', error);
     } finally {
       setLoading(false);
     }
@@ -68,19 +71,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
+      
       const data = await response.json();
-
+      
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
       }
-
+      
       localStorage.setItem('token', data.token);
+      setToken(data.token);
       setUser(data.user);
       toast.success('Welcome back!');
       router.push('/dashboard');
@@ -90,8 +94,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = async () => {
+  const logout = () => {
     localStorage.removeItem('token');
+    setToken(null);
     setUser(null);
     toast.success('Logged out successfully');
     router.push('/auth/login');
@@ -99,19 +104,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (data: RegisterData) => {
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-
+      
       const result = await response.json();
-
+      
       if (!response.ok) {
         throw new Error(result.error || 'Registration failed');
       }
-
+      
       localStorage.setItem('token', result.token);
+      setToken(result.token);
       setUser(result.user);
       toast.success('Account created successfully!');
       router.push('/dashboard');
@@ -121,30 +127,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateProfile = async (data: Partial<User>) => {
-    try {
-      const response = await fetch('/api/auth/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) throw new Error('Update failed');
-
-      const updatedUser = await response.json();
-      setUser(updatedUser);
-      toast.success('Profile updated successfully');
-    } catch (error) {
-      toast.error('Failed to update profile');
-      throw error;
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register, updateProfile }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
