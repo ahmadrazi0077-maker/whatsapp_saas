@@ -1,0 +1,38 @@
+# A configuration file for Supabase Edge Functions
+
+[general]
+project_id = "whatsapp-saas"
+
+[functions]
+verify_jwt = true
+
+[functions.auth-handler]
+name = "auth-handler"
+verify_jwt = false
+import_map = ""
+
+[functions.whatsapp-handler]
+name = "whatsapp-handler"
+verify_jwt = true
+import_map = ""
+
+[functions.messages-handler]
+name = "messages-handler"
+verify_jwt = true
+import_map = ""
+
+[functions.broadcast-handler]
+name = "broadcast-handler"
+verify_jwt = true
+import_map = ""
+
+[functions.contacts-handler]
+name = "contacts-handler"
+verify_jwt = true
+import_map = ""
+
+[env]
+SUPABASE_URL = "https://your-project.supabase.co"
+SUPABASE_ANON_KEY = "your-anon-key"
+SUPABASE_SERVICE_ROLE_KEY = "your-service-role-key"
+JWT_SECRET = "your-jwt-secret-key"
