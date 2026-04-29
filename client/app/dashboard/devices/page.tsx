@@ -6,11 +6,9 @@ import {
   TrashIcon, 
   ArrowPathIcon,
   DevicePhoneMobileIcon,
-  QrCodeIcon,
 } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import Image from 'next/image';
 
 interface Device {
   id: string;
@@ -18,61 +16,70 @@ interface Device {
   phoneNumber: string;
   status: 'connected' | 'disconnected' | 'connecting' | 'error';
   lastConnected?: string;
-  platform?: string;
+  createdAt: string;
 }
 
 export default function DevicesPage() {
-  const [devices, setDevices] = useState<Device[]>([
-    {
-      id: '1',
-      name: 'Business Phone',
-      phoneNumber: '+92 300 1234567',
-      status: 'connected',
-      lastConnected: new Date().toISOString(),
-      platform: 'android',
-    },
-  ]);
-  const [showQRModal, setShowQRModal] = useState(false);
-  const [connectingDevice, setConnectingDevice] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
+
+  useEffect(() => {
+    fetchDevices();
+  }, []);
+
+  const fetchDevices = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/devices`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      const data = await response.json();
+      setDevices(data);
+    } catch (error) {
+      console.error('Failed to fetch devices:', error);
+      toast.error('Failed to load devices');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const connectDevice = async () => {
-    setLoading(true);
-    setShowQRModal(true);
-    setConnectingDevice('connecting');
-    
-    // Simulate connection
-    setTimeout(() => {
-      setDevices([
-        ...devices,
-        {
-          id: Date.now().toString(),
-          name: 'New Device',
-          phoneNumber: '+92 300 9876543',
-          status: 'connected',
-          lastConnected: new Date().toISOString(),
-          platform: 'ios',
+    setConnecting(true);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/connect`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
-      ]);
-      setShowQRModal(false);
-      setConnectingDevice(null);
-      setLoading(false);
-      toast.success('Device connected successfully!');
-    }, 3000);
+      });
+      const data = await response.json();
+      toast.success('Device connection initiated');
+      await fetchDevices();
+    } catch (error) {
+      console.error('Failed to connect device:', error);
+      toast.error('Failed to connect device');
+    } finally {
+      setConnecting(false);
+    }
   };
 
   const disconnectDevice = async (deviceId: string) => {
     if (!confirm('Are you sure you want to disconnect this device?')) return;
     
-    setDevices(devices.filter(d => d.id !== deviceId));
-    toast.success('Device disconnected');
-  };
-
-  const reconnectDevice = async (deviceId: string) => {
-    toast.loading('Reconnecting...');
-    setTimeout(() => {
-      toast.success('Device reconnected');
-    }, 1500);
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/disconnect/${deviceId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      toast.success('Device disconnected');
+      await fetchDevices();
+    } catch (error) {
+      toast.error('Failed to disconnect device');
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -88,6 +95,14 @@ export default function DevicesPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
@@ -97,11 +112,11 @@ export default function DevicesPage() {
         </div>
         <button
           onClick={connectDevice}
-          disabled={loading}
+          disabled={connecting}
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
         >
           <PlusIcon className="h-5 w-5" />
-          Connect New Device
+          {connecting ? 'Connecting...' : 'Connect New Device'}
         </button>
       </div>
       
@@ -134,26 +149,19 @@ export default function DevicesPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">{device.name || device.phoneNumber}</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">{device.name || device.phoneNumber || 'New Device'}</h3>
                       {getStatusBadge(device.status)}
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{device.phoneNumber}</p>
-                    {device.lastConnected && (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                        Last active: {new Date(device.lastConnected).toLocaleString()}
-                      </p>
+                    {device.phoneNumber && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{device.phoneNumber}</p>
                     )}
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      Connected: {new Date(device.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
                 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => reconnectDevice(device.id)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition"
-                    title="Reconnect"
-                  >
-                    <ArrowPathIcon className="h-5 w-5" />
-                  </button>
+                {device.status === 'connected' && (
                   <button
                     onClick={() => disconnectDevice(device.id)}
                     className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
@@ -161,47 +169,10 @@ export default function DevicesPage() {
                   >
                     <TrashIcon className="h-5 w-5" />
                   </button>
-                </div>
+                )}
               </div>
             </motion.div>
           ))}
-        </div>
-      )}
-      
-      {/* QR Code Modal */}
-      {showQRModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4"
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Scan QR Code</h3>
-              <button
-                onClick={() => setShowQRModal(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Open WhatsApp on your phone → Settings → Linked Devices → Link a Device
-              </p>
-              <div className="flex justify-center mb-4">
-                <div className="w-48 h-48 bg-white rounded-lg flex items-center justify-center">
-                  <QrCodeIcon className="w-32 h-32 text-gray-400" />
-                </div>
-              </div>
-              <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-                Waiting for connection... This may take a few moments
-              </p>
-            </div>
-          </motion.div>
         </div>
       )}
     </div>
