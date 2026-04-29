@@ -1,8 +1,11 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+
+const SUPABASE_URL = 'https://xsxtbztyqjmlwfnibtdm.supabase.co'
+const EDGE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`
 
 interface User {
   id: string;
@@ -10,7 +13,6 @@ interface User {
   email: string;
   role: string;
   workspaceId: string;
-  avatar?: string;
   createdAt: string;
 }
 
@@ -31,14 +33,12 @@ interface RegisterData {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
@@ -52,19 +52,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = async (authToken: string) => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${authToken}` },
+      const response = await fetch(`${EDGE_FUNCTIONS_URL}/auth-handler/me`, {
+        headers: { 
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
       });
       
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
       } else {
+        const error = await response.json();
+        console.error('Fetch user error:', error);
         localStorage.removeItem('token');
         setToken(null);
       }
     } catch (error) {
-      console.error('Fetch user error:', error);
+      console.error('Network error:', error);
       localStorage.removeItem('token');
       setToken(null);
     } finally {
@@ -74,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/login`, {
+      const response = await fetch(`${EDGE_FUNCTIONS_URL}/auth-handler/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -107,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (data: RegisterData) => {
     try {
-      const response = await fetch(`${API_URL}/api/auth/register`, {
+      const response = await fetch(`${EDGE_FUNCTIONS_URL}/auth-handler/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
