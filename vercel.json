@@ -1,9 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "cd client && npm install && npm run build",
-  "outputDirectory": "client/.next",
-  "installCommand": "cd client && npm install",
-  "framework": "nextjs",
   "builds": [
     {
       "src": "client/package.json",
@@ -15,5 +11,8 @@
       "src": "/(.*)",
       "dest": "client/$1"
     }
-  ]
+  ],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://xsxtbztyqjmlwfnibtdm.supabase.co"
+  }
 }
