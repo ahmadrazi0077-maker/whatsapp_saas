@@ -101,32 +101,25 @@ export const devicesApi = {
 }
 
 // ==================== CONTACTS API ====================
+// Change contactsApi to use Next.js API routes instead of direct Edge Function calls
 export const contactsApi = {
-  getAll: () => edgeFunctionCall('contacts-handler/contacts'),
-  
-  getById: (id: string) => edgeFunctionCall(`contacts-handler/${id}`),
-  
-  create: (data: any) => edgeFunctionCall('contacts-handler/create', {
+  getAll: () => apiCall('contacts'),  // This now goes to /api/contacts
+  getById: (id: string) => apiCall(`contacts/${id}`),
+  create: (data: any) => apiCall('contacts', {  // POST to /api/contacts
     method: 'POST',
     body: JSON.stringify(data)
   }),
-  
-  update: (id: string, data: any) => edgeFunctionCall('contacts-handler/update', {
+  update: (id: string, data: any) => apiCall(`contacts/${id}`, {
     method: 'PUT',
-    body: JSON.stringify({ id, ...data })
+    body: JSON.stringify(data)
   }),
-  
-  delete: (id: string) => edgeFunctionCall('contacts-handler/delete', {
-    method: 'DELETE',
-    body: JSON.stringify({ id })
+  delete: (id: string) => apiCall(`contacts/${id}`, {
+    method: 'DELETE'
   }),
-  
-  import: (contacts: any[]) => edgeFunctionCall('contacts-handler/import', {
+  import: (contacts: any[]) => apiCall('contacts/import', {
     method: 'POST',
     body: JSON.stringify({ contacts })
   }),
-  
-  search: (query: string) => edgeFunctionCall(`contacts-handler/search?q=${query}`),
 }
 
 // ==================== MESSAGES & CHATS API ====================
