@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MagnifyingGlassIcon, PlusIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PlusIcon, TrashIcon, PencilIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { contactsApi } from '@/lib/supabaseApi';
 import toast from 'react-hot-toast';
-import { motion } from 'framer-motion';
+import ImportContacts from '@/components/contacts/ImportContacts';
 
 interface Contact {
   id: string;
@@ -19,9 +19,15 @@ export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [formData, setFormData] = useState({
+    phoneNumber: '',
+    name: '',
+    email: '',
+    tags: '',
+  });
 
   useEffect(() => {
     fetchContacts();
@@ -39,28 +45,39 @@ export default function ContactsPage() {
     }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
     
     try {
-      await contactsApi.create({
-        phoneNumber: formData.get('phoneNumber'),
-        name: formData.get('name'),
-        email: formData.get('email'),
-        tags: (formData.get('tags') as string)?.split(',').map(t => t.trim()) || [],
-      });
-      toast.success('Contact added successfully');
+      if (editingContact) {
+        await contactsApi.update(editingContact.id, {
+          name: formData.name,
+          email: formData.email,
+          tags: formData.tags.split(',').map(t => t.trim()),
+        });
+        toast.success('Contact updated successfully');
+      } else {
+        await contactsApi.create({
+          phoneNumber: formData.phoneNumber,
+          name: formData.name,
+          email: formData.email,
+          tags: formData.tags.split(',').map(t => t.trim()),
+        });
+        toast.success('Contact added successfully');
+      }
+      
       setShowAddModal(false);
+      setEditingContact(null);
+      setFormData({ phoneNumber: '', name: '', email: '', tags: '' });
       fetchContacts();
     } catch (error) {
-      toast.error('Failed to add contact');
+      toast.error(editingContact ? 'Failed to update contact' : 'Failed to add contact');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this contact?')) return;
+    if (!confirm('Are you sure you want to delete this contact?')) return;
+    
     try {
       await contactsApi.delete(id);
       toast.success('Contact deleted');
@@ -68,6 +85,17 @@ export default function ContactsPage() {
     } catch (error) {
       toast.error('Failed to delete contact');
     }
+  };
+
+  const handleEdit = (contact: Contact) => {
+    setEditingContact(contact);
+    setFormData({
+      phoneNumber: contact.phone_number,
+      name: contact.name || '',
+      email: contact.email || '',
+      tags: contact.tags?.join(', ') || '',
+    });
+    setShowAddModal(true);
   };
 
   const filteredContacts = contacts.filter(contact =>
@@ -91,13 +119,26 @@ export default function ContactsPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contacts</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your contacts and customer lists</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
-        >
-          <PlusIcon className="h-5 w-5" />
-          Add Contact
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
+          >
+            <ArrowUpTrayIcon className="h-5 w-5" />
+            Import
+          </button>
+          <button
+            onClick={() => {
+              setEditingContact(null);
+              setFormData({ phoneNumber: '', name: '', email: '', tags: '' });
+              setShowAddModal(true);
+            }}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
+            <PlusIcon className="h-5 w-5" />
+            Add Contact
+          </button>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -112,102 +153,129 @@ export default function ContactsPage() {
         />
       </div>
 
-      {/* Contacts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredContacts.map((contact, index) => (
-          <motion.div
-            key={contact.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700 hover:shadow-md transition"
-          >
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-lg mb-3">
-                  {contact.name?.[0]?.toUpperCase() || contact.phone_number[0]}
-                </div>
-                <h3 className="font-semibold text-gray-900 dark:text-white">{contact.name || 'Unnamed'}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{contact.phone_number}</p>
-                {contact.email && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{contact.email}</p>
-                )}
-                {contact.tags?.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {contact.tags.map(tag => (
-                      <span key={tag} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full text-xs">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => handleDelete(contact.id)}
-                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
-              >
-                <TrashIcon className="h-5 w-5" />
-              </button>
-            </div>
-          </motion.div>
-        ))}
+      {/* Contacts Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 dark:bg-gray-700 border-b dark:border-gray-600">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Name</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Email</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Tags</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">Created</th>
+                <th className="px-4 py-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {filteredContacts.map((contact) => (
+                <tr key={contact.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-gray-900 dark:text-white">{contact.name || '—'}</div>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-sm text-gray-600 dark:text-gray-400">{contact.phone_number}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{contact.email || '—'}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {contact.tags?.map((tag) => (
+                        <span key={tag} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-full text-xs text-gray-600 dark:text-gray-400">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{new Date(contact.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => handleEdit(contact)}
+                        className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(contact.id)}
+                        className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {filteredContacts.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-gray-500 dark:text-gray-400">No contacts found</p>
+          </div>
+        )}
       </div>
 
-      {filteredContacts.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">No contacts found</p>
-        </div>
-      )}
-
-      {/* Add Contact Modal */}
+      {/* Add/Edit Contact Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Add New Contact</h3>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Phone Number *</label>
-                <input
-                  type="tel"
-                  name="phoneNumber"
-                  required
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                  placeholder="+92 300 1234567"
-                />
-              </div>
+            <h3 className="text-lg font-semibold mb-4">
+              {editingContact ? 'Edit Contact' : 'Add New Contact'}
+            </h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!editingContact && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Phone Number *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={formData.phoneNumber}
+                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                    placeholder="+92 300 1234567"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium mb-1">Name</label>
                 <input
                   type="text"
-                  name="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                  placeholder="John Doe"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Email</label>
                 <input
                   type="email"
-                  name="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
+                  placeholder="john@example.com"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Tags (comma separated)</label>
                 <input
                   type="text"
-                  name="tags"
+                  value={formData.tags}
+                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"
-                  placeholder="customer, lead, vip"
+                  placeholder="customer, vip, lead"
                 />
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-4">
                 <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
-                  Add Contact
+                  {editingContact ? 'Update' : 'Add'} Contact
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setEditingContact(null);
+                  }}
+                  className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
                 </button>
@@ -215,6 +283,17 @@ export default function ContactsPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <ImportContacts
+          onSuccess={() => {
+            fetchContacts();
+            setShowImportModal(false);
+          }}
+          onClose={() => setShowImportModal(false)}
+        />
       )}
     </div>
   );
