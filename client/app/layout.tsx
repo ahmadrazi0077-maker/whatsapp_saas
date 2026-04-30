@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: 'WhatsApp SaaS',
   description: 'WhatsApp automation platform for businesses',
   icons: {
-    icon: '/favicon.ico',
+    // icon: '/favicon.ico',
   },
 };
 
