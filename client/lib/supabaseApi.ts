@@ -1,5 +1,5 @@
-const SUPABASE_URL = 'https://xsxtbztyqjmlwfnibtdm.supabase.co'
-const EDGE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`
+// Use local Next.js API routes as proxy (no CORS issues)
+const API_BASE_URL = '/api'
 
 // Helper to get auth token
 const getToken = () => {
@@ -13,7 +13,7 @@ const getToken = () => {
 async function apiCall(endpoint: string, options: RequestInit = {}) {
   const token = getToken()
   
-  const response = await fetch(`${EDGE_FUNCTIONS_URL}/${endpoint}`, {
+  const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -32,60 +32,54 @@ async function apiCall(endpoint: string, options: RequestInit = {}) {
 
 // ==================== AUTH API ====================
 export const authApi = {
-  register: (data: any) => apiCall('auth-handler/register', {
+  register: (data: any) => apiCall('auth/register', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
   
-  login: (email: string, password: string) => apiCall('auth-handler/login', {
+  login: (email: string, password: string) => apiCall('auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password })
   }),
   
-  getMe: () => apiCall('auth-handler/me'),
+  getMe: () => apiCall('auth/me'),
 }
 
 // ==================== CONTACTS API ====================
 export const contactsApi = {
-  getAll: () => apiCall('contacts-handler/contacts'),
+  getAll: () => apiCall('contacts'),
   
-  getById: (id: string) => apiCall(`contacts-handler/${id}`),
+  getById: (id: string) => apiCall(`contacts/${id}`),
   
-  create: (data: any) => apiCall('contacts-handler/create', {
+  create: (data: any) => apiCall('contacts', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
   
-  update: (id: string, data: any) => apiCall('contacts-handler/update', {
+  update: (id: string, data: any) => apiCall(`contacts/${id}`, {
     method: 'PUT',
-    body: JSON.stringify({ id, ...data })
+    body: JSON.stringify(data)
   }),
   
-  delete: (id: string) => apiCall('contacts-handler/delete', {
-    method: 'DELETE',
-    body: JSON.stringify({ id })
-  }),
-  
-  import: (contacts: any[]) => apiCall('contacts-handler/import', {
-    method: 'POST',
-    body: JSON.stringify({ contacts })
+  delete: (id: string) => apiCall(`contacts/${id}`, {
+    method: 'DELETE'
   }),
 }
 
 // ==================== MESSAGES API ====================
 export const messagesApi = {
-  getConversations: () => apiCall('messages-handler/conversations'),
+  getConversations: () => apiCall('messages/conversations'),
   
   getMessages: (conversationId: string) => 
-    apiCall(`messages-handler/messages?conversationId=${conversationId}`),
+    apiCall(`messages?conversationId=${conversationId}`),
   
-  sendMessage: (conversationId: string, message: string, contactId?: string) => 
-    apiCall('messages-handler/send', {
+  sendMessage: (conversationId: string, message: string) => 
+    apiCall('messages/send', {
       method: 'POST',
-      body: JSON.stringify({ conversationId, message, contactId })
+      body: JSON.stringify({ conversationId, message })
     }),
   
-  markAsRead: (conversationId: string) => apiCall('messages-handler/read', {
+  markAsRead: (conversationId: string) => apiCall('messages/read', {
     method: 'PUT',
     body: JSON.stringify({ conversationId })
   }),
@@ -93,42 +87,24 @@ export const messagesApi = {
 
 // ==================== BROADCAST API ====================
 export const broadcastApi = {
-  getCampaigns: () => apiCall('broadcast-handler/campaigns'),
+  getCampaigns: () => apiCall('broadcast/campaigns'),
   
-  create: (data: any) => apiCall('broadcast-handler/create', {
+  create: (data: any) => apiCall('broadcast', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
-  
-  updateStatus: (campaignId: string, status: string) => apiCall('broadcast-handler/status', {
-    method: 'PUT',
-    body: JSON.stringify({ campaignId, status })
-  }),
-  
-  delete: (campaignId: string) => apiCall('broadcast-handler/delete', {
-    method: 'DELETE',
-    body: JSON.stringify({ campaignId })
-  }),
 }
 
-// ==================== WHATSAPP DEVICES API ====================
+// ==================== DEVICES API ====================
 export const devicesApi = {
-  getAll: () => apiCall('whatsapp-handler/devices'),
+  getAll: () => apiCall('devices'),
   
-  connect: (name?: string) => apiCall('whatsapp-handler/connect', {
-    method: 'POST',
-    body: JSON.stringify({ name })
+  connect: () => apiCall('devices/connect', {
+    method: 'POST'
   }),
   
-  updateStatus: (deviceId: string, status: string, phoneNumber?: string) => 
-    apiCall('whatsapp-handler/status', {
-      method: 'PUT',
-      body: JSON.stringify({ deviceId, status, phoneNumber })
-    }),
-  
-  disconnect: (deviceId: string) => apiCall('whatsapp-handler/disconnect', {
-    method: 'POST',
-    body: JSON.stringify({ deviceId })
+  disconnect: (deviceId: string) => apiCall(`devices/${deviceId}/disconnect`, {
+    method: 'POST'
   }),
 }
 
@@ -141,16 +117,12 @@ export const analyticsApi = {
       devicesApi.getAll().catch(() => [])
     ])
     
-    const totalMessages = conversations.reduce((sum: number, conv: any) => sum + (conv.message_count || 0), 0)
-    const activeChats = conversations.filter((c: any) => c.status === 'ACTIVE').length
-    const connectedDevices = devices.filter((d: any) => d.status === 'connected').length
-    
     return {
       stats: {
-        totalMessages,
+        totalMessages: conversations.reduce((sum: number, conv: any) => sum + (conv.message_count || 0), 0),
         totalContacts: contacts.length,
-        activeChats,
-        devices: connectedDevices,
+        activeChats: conversations.filter((c: any) => c.status === 'ACTIVE').length,
+        devices: devices.filter((d: any) => d.status === 'CONNECTED').length,
         responseRate: 94,
         avgResponseTime: 45,
         satisfactionRate: 98,
