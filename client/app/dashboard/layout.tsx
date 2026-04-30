@@ -4,11 +4,7 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
-  return (
-    <ErrorBoundary>
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: '📊' },
   { name: 'Chats', href: '/dashboard/chats', icon: '💬' },
@@ -35,7 +31,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Simple Header */}
+      {/* Header */}
       <nav className="bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -48,7 +44,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </span>
               <button
                 onClick={handleLogout}
-                className="text-red-600 hover:text-red-700"
+                className="text-red-600 hover:text-red-700 text-sm font-medium"
               >
                 Logout
               </button>
@@ -57,25 +53,27 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
-      {/* Sidebar and Content */}
       <div className="flex">
-        {/* Simple Sidebar */}
+        {/* Sidebar */}
         <div className="w-64 bg-white dark:bg-gray-800 shadow-sm min-h-screen">
-          <nav className="mt-5 px-2">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                  pathname === item.href
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                    : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700'
-                }`}
-              >
-                <span className="mr-3">{item.icon}</span>
-                {item.name}
-              </Link>
-            ))}
+          <nav className="mt-5 px-2 space-y-1">
+            {navigation.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
+                      : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <span className="mr-3 text-lg">{item.icon}</span>
+                  {item.name}
+                </Link>
+              );
+            })}
           </nav>
         </div>
 
@@ -85,8 +83,5 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </main>
       </div>
     </div>
-  );
-}
-</ErrorBoundary>
   );
 }
