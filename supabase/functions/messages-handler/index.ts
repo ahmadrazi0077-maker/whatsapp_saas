@@ -4,10 +4,15 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-// Helper function to verify JWT
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Content-Type': 'application/json'
+}
+
 async function verifyAuth(authHeader: string | null): Promise<string | null> {
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null
-  // Simplified - in production, verify JWT properly
   const token = authHeader.split(' ')[1]
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
@@ -17,103 +22,81 @@ async function verifyAuth(authHeader: string | null): Promise<string | null> {
   }
 }
 
-// CORS headers
-const headers = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, GET, PUT, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+async function getUserWorkspace(userId: string): Promise<string | null> {
+  const { data: user } = await supabase
+    .from('users')
+    .select('workspace_id')
+    .eq('id', userId)
+    .single()
+  return user?.workspace_id || null
 }
 
 Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { status: 204, headers: corsHeaders })
+  }
+
+  const userId = await verifyAuth(req.headers.get('Authorization'))
+  if (!userId) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+  }
+
+  const workspaceId = await getUserWorkspace(userId!)
   const url = new URL(req.url)
-  const method = req.method
   const endpoint = url.pathname.split('/').pop() || ''
 
-  if (method === 'OPTIONS') {
-    return new Response('ok', { status: 204, headers })
-  }
+  // ========== GET CONVERSATIONS ==========
+  if (endpoint === 'conversations' && req.method === 'GET') {
+    const { data: conversations, error } = await supabase
+      .from('conversations')
+      .select(`
+        id,
+        last_message,
+        last_message_at,
+        status,
+        unread_count,
+        contact:contacts(id, name, phone_number)
+      `)
+      .eq('workspace_id', workspaceId)
+      .order('last_message_at', { ascending: false })
 
-  // Verify authentication
-  const userId = await verifyAuth(req.headers.get('Authorization'))
-  if (!userId && endpoint !== 'test') {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers })
-  }
-
-  // ==================== GET CONVERSATIONS ====================
-  if (endpoint === 'conversations' && method === 'GET') {
-    try {
-      // Get user's workspace
-      const { data: user } = await supabase
-        .from('users')
-        .select('workspace_id')
-        .eq('id', userId)
-        .single()
-
-      if (!user) {
-        return new Response(JSON.stringify({ error: 'User not found' }), { status: 404, headers })
-      }
-
-      const { data: conversations, error } = await supabase
-        .from('conversations')
-        .select(`
-          id,
-          last_message,
-          last_message_at,
-          status,
-          unread_count,
-          contact:contacts(id, name, phone_number)
-        `)
-        .eq('workspace_id', user.workspace_id)
-        .order('last_message_at', { ascending: false })
-
-      if (error) throw error
-
-      return new Response(JSON.stringify(conversations), { status: 200, headers })
-    } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers })
+    if (error) {
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
+
+    return new Response(JSON.stringify(conversations), { status: 200, headers: corsHeaders })
   }
 
-  // ==================== GET MESSAGES ====================
-  if (endpoint === 'messages' && method === 'GET') {
-    try {
-      const conversationId = url.searchParams.get('conversationId')
-      if (!conversationId) {
-        return new Response(JSON.stringify({ error: 'Conversation ID required' }), { status: 400, headers })
-      }
+  // ========== GET MESSAGES ==========
+  if (endpoint === 'messages' && req.method === 'GET') {
+    const conversationId = url.searchParams.get('conversationId')
+    
+    const { data: messages, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true })
 
-      const { data: messages, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true })
-
-      if (error) throw error
-
-      return new Response(JSON.stringify(messages), { status: 200, headers })
-    } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers })
+    if (error) {
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
+
+    return new Response(JSON.stringify(messages), { status: 200, headers: corsHeaders })
   }
 
-  // ==================== SEND MESSAGE ====================
-  if (endpoint === 'send' && method === 'POST') {
+  // ========== SEND MESSAGE ==========
+  if (endpoint === 'send' && req.method === 'POST') {
     try {
       const { conversationId, message, contactId } = await req.json()
 
-      if (!message) {
-        return new Response(JSON.stringify({ error: 'Message required' }), { status: 400, headers })
-      }
-
       let convId = conversationId
 
-      // If no conversation, create one
       if (!convId && contactId) {
         const { data: newConv, error: convError } = await supabase
           .from('conversations')
           .insert({
             contact_id: contactId,
+            workspace_id: workspaceId,
             status: 'ACTIVE',
             last_message: message,
             last_message_at: new Date().toISOString()
@@ -125,21 +108,19 @@ Deno.serve(async (req: Request) => {
         convId = newConv.id
       }
 
-      // Save message
       const { data: newMessage, error } = await supabase
         .from('messages')
         .insert({
           conversation_id: convId,
           body: message,
           from_me: true,
-          status: 'SENT'
+          status: 'sent'
         })
         .select()
         .single()
 
       if (error) throw error
 
-      // Update conversation
       await supabase
         .from('conversations')
         .update({
@@ -148,43 +129,33 @@ Deno.serve(async (req: Request) => {
         })
         .eq('id', convId)
 
-      return new Response(JSON.stringify(newMessage), { status: 201, headers })
+      return new Response(JSON.stringify(newMessage), { status: 201, headers: corsHeaders })
     } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
   }
 
-  // ==================== MARK AS READ ====================
-  if (endpoint === 'read' && method === 'PUT') {
+  // ========== MARK AS READ ==========
+  if (endpoint === 'read' && req.method === 'PUT') {
     try {
       const { conversationId } = await req.json()
 
-      const { error } = await supabase
+      await supabase
         .from('messages')
-        .update({ status: 'READ' })
+        .update({ status: 'read' })
         .eq('conversation_id', conversationId)
         .eq('from_me', false)
-
-      if (error) throw error
 
       await supabase
         .from('conversations')
         .update({ unread_count: 0 })
         .eq('id', conversationId)
 
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers })
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
     } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
   }
 
-  // ==================== TEST ====================
-  if (endpoint === 'test' && method === 'GET') {
-    return new Response(JSON.stringify({ 
-      message: 'Messages handler is working!',
-      endpoints: ['conversations', 'messages', 'send', 'read']
-    }), { status: 200, headers })
-  }
-
-  return new Response(JSON.stringify({ error: 'Endpoint not found' }), { status: 404, headers })
+  return new Response(JSON.stringify({ error: 'Endpoint not found' }), { status: 404, headers: corsHeaders })
 })
