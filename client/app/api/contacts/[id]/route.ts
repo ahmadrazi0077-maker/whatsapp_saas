@@ -45,3 +45,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ error: 'Failed to delete contact' }, { status: 500 })
   }
 }
+export const dynamic = 'force-dynamic';
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  return NextResponse.json({ success: true })
+}
+
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const body = await req.json()
+  return NextResponse.json({ id: params.id, ...body })
+}
