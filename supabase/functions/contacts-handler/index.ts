@@ -4,11 +4,24 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+// CORS headers - Must be on every response
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+  'Access-Control-Max-Age': '86400',
   'Content-Type': 'application/json'
+}
+
+// Handle preflight requests immediately
+const handleCors = (req: Request): Response | null => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { 
+      status: 204, 
+      headers: corsHeaders 
+    })
+  }
+  return null
 }
 
 async function verifyAuth(authHeader: string | null): Promise<string | null> {
@@ -32,18 +45,23 @@ async function getUserWorkspace(userId: string): Promise<string | null> {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { status: 204, headers: corsHeaders })
-  }
+  // Handle CORS preflight first
+  const corsResponse = handleCors(req)
+  if (corsResponse) return corsResponse
 
   const userId = await verifyAuth(req.headers.get('Authorization'))
   if (!userId) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+      status: 401, 
+      headers: corsHeaders 
+    })
   }
 
   const workspaceId = await getUserWorkspace(userId!)
   const url = new URL(req.url)
   const endpoint = url.pathname.split('/').pop() || ''
+
+  console.log(`[Contacts Handler] ${req.method} /${endpoint}`)
 
   // GET ALL CONTACTS
   if (endpoint === 'contacts' && req.method === 'GET') {
@@ -54,10 +72,16 @@ Deno.serve(async (req: Request) => {
       .order('created_at', { ascending: false })
 
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: error.message }), { 
+        status: 500, 
+        headers: corsHeaders 
+      })
     }
 
-    return new Response(JSON.stringify(contacts), { status: 200, headers: corsHeaders })
+    return new Response(JSON.stringify(contacts), { 
+      status: 200, 
+      headers: corsHeaders 
+    })
   }
 
   // CREATE CONTACT
@@ -66,7 +90,10 @@ Deno.serve(async (req: Request) => {
       const { phoneNumber, name, email, tags } = await req.json()
 
       if (!phoneNumber) {
-        return new Response(JSON.stringify({ error: 'Phone number is required' }), { status: 400, headers: corsHeaders })
+        return new Response(JSON.stringify({ error: 'Phone number is required' }), { 
+          status: 400, 
+          headers: corsHeaders 
+        })
       }
 
       const { data: contact, error } = await supabase
@@ -83,10 +110,16 @@ Deno.serve(async (req: Request) => {
 
       if (error) throw error
 
-      return new Response(JSON.stringify(contact), { status: 201, headers: corsHeaders })
+      return new Response(JSON.stringify(contact), { 
+        status: 201, 
+        headers: corsHeaders 
+      })
     } catch (error) {
       console.error('Create contact error:', error)
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: error.message }), { 
+        status: 500, 
+        headers: corsHeaders 
+      })
     }
   }
 
@@ -110,9 +143,15 @@ Deno.serve(async (req: Request) => {
 
       if (error) throw error
 
-      return new Response(JSON.stringify(contact), { status: 200, headers: corsHeaders })
+      return new Response(JSON.stringify(contact), { 
+        status: 200, 
+        headers: corsHeaders 
+      })
     } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: error.message }), { 
+        status: 500, 
+        headers: corsHeaders 
+      })
     }
   }
 
@@ -129,9 +168,15 @@ Deno.serve(async (req: Request) => {
 
       if (error) throw error
 
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
+      return new Response(JSON.stringify({ success: true }), { 
+        status: 200, 
+        headers: corsHeaders 
+      })
     } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: error.message }), { 
+        status: 500, 
+        headers: corsHeaders 
+      })
     }
   }
 
@@ -159,12 +204,21 @@ Deno.serve(async (req: Request) => {
         success: true, 
         count: imported.length,
         contacts: imported 
-      }), { status: 201, headers: corsHeaders })
+      }), { 
+        status: 201, 
+        headers: corsHeaders 
+      })
     } catch (error) {
       console.error('Import error:', error)
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: error.message }), { 
+        status: 500, 
+        headers: corsHeaders 
+      })
     }
   }
 
-  return new Response(JSON.stringify({ error: 'Endpoint not found' }), { status: 404, headers: corsHeaders })
+  return new Response(JSON.stringify({ error: 'Endpoint not found' }), { 
+    status: 404, 
+    headers: corsHeaders 
+  })
 })
