@@ -2,10 +2,14 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 
+const SUPABASE_URL = 'https://xsxtbztyqjmlwfnibtdm.supabase.co'
+const EDGE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
     const file = formData.get('file') as File
+    const authHeader = req.headers.get('authorization') || ''
     
     if (!file) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
@@ -13,9 +17,8 @@ export async function POST(req: NextRequest) {
 
     const text = await file.text()
     const rows = text.split('\n')
-    const headers = rows[0].split(',')
-    
     const contacts = []
+
     for (let i = 1; i < rows.length; i++) {
       const values = rows[i].split(',')
       if (values.length >= 2 && values[0] && values[1]) {
@@ -28,23 +31,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Save to Supabase
-    const token = req.headers.get('authorization')
-    const SUPABASE_URL = 'https://xsxtbztyqjmlwfnibtdm.supabase.co'
-    const EDGE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`
-    
     const response = await fetch(`${EDGE_FUNCTIONS_URL}/contacts-handler/import`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': token || ''
+        'Authorization': authHeader,
       },
-      body: JSON.stringify({ contacts })
+      body: JSON.stringify({ contacts }),
     })
     
     const data = await response.json()
     return NextResponse.json(data, { status: response.status })
   } catch (error) {
+    console.error('Import error:', error)
     return NextResponse.json({ error: 'Import failed' }, { status: 500 })
   }
 }
