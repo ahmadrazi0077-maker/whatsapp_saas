@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { authApi } from '@/lib/supabaseApi';
 import toast from 'react-hot-toast';
 
 interface User {
@@ -21,8 +20,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   register: (data: RegisterData) => Promise<void>;
-  updateProfile: (data: any) => Promise<void>;
-changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
+  updateProfile?: (data: any) => Promise<void>;
+  changePassword?: (oldPassword: string, newPassword: string) => Promise<void>;
 }
 
 interface RegisterData {
@@ -33,6 +32,27 @@ interface RegisterData {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const API_BASE_URL = '/api';
+
+async function apiCall(endpoint: string, options: RequestInit = {}) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  
+  const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+      ...options.headers,
+    },
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(error.error || `API call failed: ${response.status}`);
+  }
+  
+  return response.json();
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -52,7 +72,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = async (authToken: string) => {
     try {
-      const userData = await authApi.getMe();
+      const userData = await apiCall('auth/me', {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
       setUser(userData);
     } catch (error) {
       console.error('Fetch user error:', error);
@@ -65,7 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const data = await authApi.login(email, password);
+      const data = await apiCall('auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
       localStorage.setItem('token', data.token);
       setToken(data.token);
       setUser(data.user);
@@ -87,7 +112,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (data: RegisterData) => {
     try {
-      const result = await authApi.register(data);
+      const result = await apiCall('auth/register', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
       localStorage.setItem('token', result.token);
       setToken(result.token);
       setUser(result.user);
@@ -98,35 +126,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   };
-  const updateProfile = async (data: any) => {
-  try {
-    const response = await apiCall('auth/update-profile', {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-    setUser(response);
-    toast.success('Profile updated');
-  } catch (error: any) {
-    toast.error(error.message);
-    throw error;
-  }
-};
 
-const changePassword = async (oldPassword: string, newPassword: string) => {
-  try {
-    await apiCall('auth/change-password', {
-      method: 'POST',
-      body: JSON.stringify({ oldPassword, newPassword })
-    });
-    toast.success('Password changed successfully');
-  } catch (error: any) {
-    toast.error(error.message);
-    throw error;
-  }
-};
+  const updateProfile = async (data: any) => {
+    try {
+      const updatedUser = await apiCall('auth/update-profile', {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+      setUser(updatedUser);
+      toast.success('Profile updated successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update profile');
+      throw error;
+    }
+  };
+
+  const changePassword = async (oldPassword: string, newPassword: string) => {
+    try {
+      await apiCall('auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ oldPassword, newPassword })
+      });
+      toast.success('Password changed successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to change password');
+      throw error;
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, register }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      token, 
+      loading, 
+      login, 
+      logout, 
+      register,
+      updateProfile,
+      changePassword
+    }}>
       {children}
     </AuthContext.Provider>
   );
