@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useState } from 'react';
 import { ArrowUpTrayIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
@@ -14,20 +13,14 @@ export default function ImportContacts({ onSuccess, onClose }: ImportContactsPro
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file && (file.type === 'text/csv' || file.name.endsWith('.csv'))) {
-      setFile(file);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile && (selectedFile.type === 'text/csv' || selectedFile.name.endsWith('.csv'))) {
+      setFile(selectedFile);
     } else {
       toast.error('Please upload a CSV file');
     }
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'text/csv': ['.csv'] },
-    maxFiles: 1
-  });
+  };
 
   const handleImport = async () => {
     if (!file) return;
@@ -48,7 +41,7 @@ export default function ImportContacts({ onSuccess, onClose }: ImportContactsPro
       const data = await response.json();
       
       if (response.ok) {
-        toast.success(`Imported ${data.count} contacts successfully!`);
+        toast.success(`Imported ${data.count || data.contacts?.length || 0} contacts successfully!`);
         onSuccess();
         onClose();
       } else {
@@ -71,21 +64,20 @@ export default function ImportContacts({ onSuccess, onClose }: ImportContactsPro
           </button>
         </div>
 
-        <div
-          {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition
-            ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}`}
-        >
-          <input {...getInputProps()} />
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
           <ArrowUpTrayIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          {isDragActive ? (
-            <p>Drop the CSV file here...</p>
-          ) : (
-            <div>
-              <p className="text-gray-600">Drag & drop a CSV file here</p>
-              <p className="text-sm text-gray-500 mt-1">or click to select</p>
-            </div>
-          )}
+          <label className="cursor-pointer">
+            <span className="bg-blue-600 text-white px-4 py-2 rounded-lg inline-block hover:bg-blue-700">
+              Choose CSV File
+            </span>
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </label>
+          <p className="text-sm text-gray-500 mt-2">or drag and drop</p>
         </div>
 
         {file && (
@@ -113,7 +105,7 @@ export default function ImportContacts({ onSuccess, onClose }: ImportContactsPro
 
         <div className="mt-4 text-xs text-gray-500">
           <p>CSV Format:</p>
-          <code className="block bg-gray-100 p-2 rounded mt-1">
+          <code className="block bg-gray-100 p-2 rounded mt-1 text-xs overflow-x-auto">
             phone_number,name,email,tags<br />
             +923001234567,John Doe,john@example.com,customer|vip<br />
             +923008765432,Jane Smith,jane@example.com,lead
