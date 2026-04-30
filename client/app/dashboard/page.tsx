@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -76,13 +77,6 @@ export default function DashboardPage() {
           <h3 className="font-semibold text-lg">Connect Device</h3>
           <p className="text-orange-100 text-sm mt-1">Add new WhatsApp device</p>
         </Link>
-      </div>
-
-      {/* Debug Info (remove in production) */}
-      <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-4">
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          Debug: User logged in as {user?.email}
-        </p>
       </div>
     </div>
   );
