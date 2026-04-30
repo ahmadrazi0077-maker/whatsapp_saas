@@ -259,6 +259,60 @@ if (path === '/change-password' && req.method === 'POST') {
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers })
   }
 }
+// In your auth-handler edge function
+if (path === '/me' && req.method === 'GET') {
+  try {
+    const authHeader = req.headers.get('Authorization')
+    console.log('Auth header present:', !!authHeader)
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'No token provided' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const token = authHeader.split(' ')[1]
+    console.log('Token received, length:', token.length)
+    
+    const payload = await verifyJWT(token)
+    console.log('Decoded payload:', payload)
+    
+    if (!payload || !payload.sub) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired token' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, email, name, role, workspace_id, created_at')
+      .eq('id', payload.sub)
+      .single()
+
+    if (error) {
+      console.error('Database error:', error)
+      return new Response(
+        JSON.stringify({ error: 'User not found' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('User found:', user?.email)
+    
+    return new Response(
+      JSON.stringify(user),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
+  } catch (error) {
+    console.error('Get me error:', error)
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+}
   // ==================== LOGIN ====================
   if (endpoint === 'login' && method === 'POST') {
     try {
