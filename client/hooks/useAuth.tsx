@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { authApi } from '@/lib/supabaseApi';
 import toast from 'react-hot-toast';
 
 interface User {
@@ -49,20 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = async (authToken: string) => {
     try {
-      const response = await fetch('/api/auth/me', {
-        headers: { 
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-      });
-      
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      } else {
-        localStorage.removeItem('token');
-        setToken(null);
-      }
+      const userData = await authApi.getMe();
+      setUser(userData);
     } catch (error) {
       console.error('Fetch user error:', error);
       localStorage.removeItem('token');
@@ -74,73 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-      
+      const data = await authApi.login(email, password);
       localStorage.setItem('token', data.token);
       setToken(data.token);
       setUser(data.user);
       toast.success('Welcome back!');
       router.push('/dashboard');
-    } catch (error: any) {
-      toast.error(error.message);
-      throw error;
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
-    toast.success('Logged out successfully');
-    router.push('/auth/login');
-  };
-
-  const register = async (data: RegisterData) => {
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Registration failed');
-      }
-      
-      localStorage.setItem('token', result.token);
-      setToken(result.token);
-      setUser(result.user);
-      toast.success('Account created successfully!');
-      router.push('/dashboard');
-    } catch (error: any) {
-      toast.error(error.message);
-      throw error;
-    }
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, register }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+    } catch (error: any)
