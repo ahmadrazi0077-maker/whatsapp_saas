@@ -69,4 +69,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data.user);
       toast.success('Welcome back!');
       router.push('/dashboard');
-    } catch (error: any)
+    } catch (error: any) {
+      toast.error(error.message || 'Login failed');
+      throw error;
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+    toast.success('Logged out successfully');
+    router.push('/auth/login');
+  };
+
+  const register = async (data: RegisterData) => {
+    try {
+      const result = await authApi.register(data);
+      localStorage.setItem('token', result.token);
+      setToken(result.token);
+      setUser(result.user);
+      toast.success('Account created successfully!');
+      router.push('/dashboard');
+    } catch (error: any) {
+      toast.error(error.message || 'Registration failed');
+      throw error;
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, token, loading, login, logout, register }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
