@@ -12,7 +12,7 @@ import {
   CalendarIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline';
-import { messagesApi, contactsApi, devicesApi } from '@/lib/supabaseApi';
+import { messagesApi, contactsApi, devicesApi, analyticsApi } from '@/lib/supabaseApi';
 import {
   Chart as ChartJS,
   CategoryScale,
