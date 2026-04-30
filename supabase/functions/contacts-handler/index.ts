@@ -4,6 +4,13 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Content-Type': 'application/json'
+}
+
 async function verifyAuth(authHeader: string | null): Promise<string | null> {
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null
   const token = authHeader.split(' ')[1]
@@ -24,74 +31,42 @@ async function getUserWorkspace(userId: string): Promise<string | null> {
   return user?.workspace_id || null
 }
 
-const headers = {
-  'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-}
-
 Deno.serve(async (req: Request) => {
-  const url = new URL(req.url)
-  const method = req.method
-  const endpoint = url.pathname.split('/').pop() || ''
-
-  if (method === 'OPTIONS') {
-    return new Response('ok', { status: 204, headers })
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { status: 204, headers: corsHeaders })
   }
 
   const userId = await verifyAuth(req.headers.get('Authorization'))
-  if (!userId && endpoint !== 'test') {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers })
+  if (!userId) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
   }
 
   const workspaceId = await getUserWorkspace(userId!)
+  const url = new URL(req.url)
+  const endpoint = url.pathname.split('/').pop() || ''
 
-  // ==================== GET ALL CONTACTS ====================
-  if (endpoint === 'contacts' && method === 'GET') {
-    try {
-      const { data: contacts, error } = await supabase
-        .from('contacts')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .order('created_at', { ascending: false })
+  // GET ALL CONTACTS
+  if (endpoint === 'contacts' && req.method === 'GET') {
+    const { data: contacts, error } = await supabase
+      .from('contacts')
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: false })
 
-      if (error) throw error
-      return new Response(JSON.stringify(contacts), { status: 200, headers })
-    } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers })
+    if (error) {
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
+
+    return new Response(JSON.stringify(contacts), { status: 200, headers: corsHeaders })
   }
 
-  // ==================== GET SINGLE CONTACT ====================
-  if (endpoint.match(/^[0-9a-f-]+$/) && method === 'GET') {
-    try {
-      const contactId = endpoint
-      const { data: contact, error } = await supabase
-        .from('contacts')
-        .select('*')
-        .eq('id', contactId)
-        .eq('workspace_id', workspaceId)
-        .single()
-
-      if (error) throw error
-      if (!contact) {
-        return new Response(JSON.stringify({ error: 'Contact not found' }), { status: 404, headers })
-      }
-
-      return new Response(JSON.stringify(contact), { status: 200, headers })
-    } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers })
-    }
-  }
-
-  // ==================== CREATE CONTACT ====================
-  if (endpoint === 'create' && method === 'POST') {
+  // CREATE CONTACT
+  if (endpoint === 'create' && req.method === 'POST') {
     try {
       const { phoneNumber, name, email, tags } = await req.json()
 
       if (!phoneNumber) {
-        return new Response(JSON.stringify({ error: 'Phone number required' }), { status: 400, headers })
+        return new Response(JSON.stringify({ error: 'Phone number is required' }), { status: 400, headers: corsHeaders })
       }
 
       const { data: contact, error } = await supabase
@@ -108,20 +83,26 @@ Deno.serve(async (req: Request) => {
 
       if (error) throw error
 
-      return new Response(JSON.stringify(contact), { status: 201, headers })
+      return new Response(JSON.stringify(contact), { status: 201, headers: corsHeaders })
     } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers })
+      console.error('Create contact error:', error)
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
   }
 
-  // ==================== UPDATE CONTACT ====================
-  if (endpoint === 'update' && method === 'PUT') {
+  // UPDATE CONTACT
+  if (endpoint === 'update' && req.method === 'PUT') {
     try {
       const { id, name, email, tags } = await req.json()
 
       const { data: contact, error } = await supabase
         .from('contacts')
-        .update({ name, email, tags, updated_at: new Date().toISOString() })
+        .update({ 
+          name: name || null, 
+          email: email || null, 
+          tags: tags || [],
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id)
         .eq('workspace_id', workspaceId)
         .select()
@@ -129,14 +110,14 @@ Deno.serve(async (req: Request) => {
 
       if (error) throw error
 
-      return new Response(JSON.stringify(contact), { status: 200, headers })
+      return new Response(JSON.stringify(contact), { status: 200, headers: corsHeaders })
     } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
   }
 
-  // ==================== DELETE CONTACT ====================
-  if (endpoint === 'delete' && method === 'DELETE') {
+  // DELETE CONTACT
+  if (endpoint === 'delete' && req.method === 'DELETE') {
     try {
       const { id } = await req.json()
 
@@ -148,14 +129,14 @@ Deno.serve(async (req: Request) => {
 
       if (error) throw error
 
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers })
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
     } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers })
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
   }
 
-  // ==================== IMPORT CONTACTS ====================
-  if (endpoint === 'import' && method === 'POST') {
+  // IMPORT CONTACTS
+  if (endpoint === 'import' && req.method === 'POST') {
     try {
       const { contacts } = await req.json()
 
@@ -169,7 +150,7 @@ Deno.serve(async (req: Request) => {
 
       const { data: imported, error } = await supabase
         .from('contacts')
-        .insert(contactsToInsert)
+        .upsert(contactsToInsert, { onConflict: 'phone_number,workspace_id' })
         .select()
 
       if (error) throw error
@@ -178,18 +159,12 @@ Deno.serve(async (req: Request) => {
         success: true, 
         count: imported.length,
         contacts: imported 
-      }), { status: 201, headers })
+      }), { status: 201, headers: corsHeaders })
     } catch (error) {
-      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers })
+      console.error('Import error:', error)
+      return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
     }
   }
 
-  if (endpoint === 'test' && method === 'GET') {
-    return new Response(JSON.stringify({ 
-      message: 'Contacts handler is working!',
-      endpoints: ['contacts', 'create', 'update', 'delete', 'import']
-    }), { status: 200, headers })
-  }
-
-  return new Response(JSON.stringify({ error: 'Endpoint not found' }), { status: 404, headers })
+  return new Response(JSON.stringify({ error: 'Endpoint not found' }), { status: 404, headers: corsHeaders })
 })
