@@ -4,7 +4,11 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  return (
+    <ErrorBoundary>
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: '📊' },
   { name: 'Chats', href: '/dashboard/chats', icon: '💬' },
@@ -81,5 +85,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </main>
       </div>
     </div>
+  );
+}
+</ErrorBoundary>
   );
 }
