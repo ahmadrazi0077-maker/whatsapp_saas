@@ -7,11 +7,11 @@ import { Toaster } from 'react-hot-toast';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'WhatsApp SaaS - Business WhatsApp Automation',
-  description: 'Powerful WhatsApp automation for businesses. Send bulk messages, auto-reply, and manage leads efficiently.',
-  keywords: 'whatsapp marketing, bulk whatsapp, whatsapp automation, business communication',
-  authors: [{ name: 'WhatsApp SaaS' }],
-  viewport: 'width=device-width, initial-scale=1',
+  title: 'WhatsApp SaaS',
+  description: 'WhatsApp automation platform for businesses',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
@@ -31,20 +31,6 @@ export default function RootLayout({
               style: {
                 background: '#363636',
                 color: '#fff',
-              },
-              success: {
-                duration: 3000,
-                iconTheme: {
-                  primary: '#10B981',
-                  secondary: '#fff',
-                },
-              },
-              error: {
-                duration: 4000,
-                iconTheme: {
-                  primary: '#EF4444',
-                  secondary: '#fff',
-                },
               },
             }}
           />
