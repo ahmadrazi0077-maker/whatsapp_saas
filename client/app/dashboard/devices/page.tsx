@@ -1,22 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  PlusIcon, 
-  TrashIcon, 
-  ArrowPathIcon,
-  DevicePhoneMobileIcon,
-} from '@heroicons/react/24/outline';
-import { motion } from 'framer-motion';
+import { PlusIcon, TrashIcon, DevicePhoneMobileIcon } from '@heroicons/react/24/outline';
+import { devicesApi } from '@/lib/supabaseApi';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
 interface Device {
   id: string;
   name: string;
-  phoneNumber: string;
-  status: 'connected' | 'disconnected' | 'connecting' | 'error';
-  lastConnected?: string;
-  createdAt: string;
+  phone_number: string;
+  status: 'connected' | 'disconnected' | 'connecting';
+  created_at: string;
 }
 
 export default function DevicesPage() {
@@ -30,12 +25,7 @@ export default function DevicesPage() {
 
   const fetchDevices = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/devices`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      const data = await response.json();
+      const data = await devicesApi.getAll();
       setDevices(data);
     } catch (error) {
       console.error('Failed to fetch devices:', error);
@@ -48,17 +38,10 @@ export default function DevicesPage() {
   const connectDevice = async () => {
     setConnecting(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/connect`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      const data = await response.json();
+      const result = await devicesApi.connect();
       toast.success('Device connection initiated');
-      await fetchDevices();
+      fetchDevices();
     } catch (error) {
-      console.error('Failed to connect device:', error);
       toast.error('Failed to connect device');
     } finally {
       setConnecting(false);
@@ -67,16 +50,10 @@ export default function DevicesPage() {
 
   const disconnectDevice = async (deviceId: string) => {
     if (!confirm('Are you sure you want to disconnect this device?')) return;
-    
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/whatsapp/disconnect/${deviceId}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      await devicesApi.disconnect(deviceId);
       toast.success('Device disconnected');
-      await fetchDevices();
+      fetchDevices();
     } catch (error) {
       toast.error('Failed to disconnect device');
     }
@@ -85,13 +62,11 @@ export default function DevicesPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'connected':
-        return <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs">Connected</span>;
+        return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Connected</span>;
       case 'connecting':
-        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full text-xs">Connecting...</span>;
-      case 'error':
-        return <span className="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded-full text-xs">Error</span>;
+        return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Connecting...</span>;
       default:
-        return <span className="px-2 py-1 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400 rounded-full text-xs">Disconnected</span>;
+        return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">Disconnected</span>;
     }
   };
 
@@ -105,7 +80,7 @@ export default function DevicesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center flex-wrap gap-4">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">WhatsApp Devices</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your connected WhatsApp accounts</p>
@@ -116,19 +91,16 @@ export default function DevicesPage() {
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
         >
           <PlusIcon className="h-5 w-5" />
-          {connecting ? 'Connecting...' : 'Connect New Device'}
+          {connecting ? 'Connecting...' : 'Connect Device'}
         </button>
       </div>
-      
+
       {devices.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+        <div className="text-center py-12 border-2 border-dashed rounded-lg">
           <DevicePhoneMobileIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No devices connected</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">Connect your first WhatsApp device to start messaging</p>
-          <button
-            onClick={connectDevice}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
+          <h3 className="text-lg font-semibold mb-2">No devices connected</h3>
+          <p className="text-gray-500 mb-4">Connect your first WhatsApp device to start messaging</p>
+          <button onClick={connectDevice} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
             Connect Device
           </button>
         </div>
@@ -149,23 +121,21 @@ export default function DevicesPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">{device.name || device.phoneNumber || 'New Device'}</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white">{device.name || 'WhatsApp Device'}</h3>
                       {getStatusBadge(device.status)}
                     </div>
-                    {device.phoneNumber && (
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{device.phoneNumber}</p>
+                    {device.phone_number && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{device.phone_number}</p>
                     )}
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                      Connected: {new Date(device.createdAt).toLocaleDateString()}
+                      Connected: {new Date(device.created_at).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
-                
                 {device.status === 'connected' && (
                   <button
                     onClick={() => disconnectDevice(device.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
-                    title="Disconnect"
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
                   >
                     <TrashIcon className="h-5 w-5" />
                   </button>
