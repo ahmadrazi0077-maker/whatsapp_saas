@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import { analyticsApi } from '@/lib/supabaseApi';
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
