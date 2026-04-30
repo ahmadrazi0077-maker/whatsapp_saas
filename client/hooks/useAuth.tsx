@@ -21,6 +21,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   register: (data: RegisterData) => Promise<void>;
+  updateProfile: (data: any) => Promise<void>;
+changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
 }
 
 interface RegisterData {
@@ -96,6 +98,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   };
+  const updateProfile = async (data: any) => {
+  try {
+    const response = await apiCall('auth/update-profile', {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    setUser(response);
+    toast.success('Profile updated');
+  } catch (error: any) {
+    toast.error(error.message);
+    throw error;
+  }
+};
+
+const changePassword = async (oldPassword: string, newPassword: string) => {
+  try {
+    await apiCall('auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ oldPassword, newPassword })
+    });
+    toast.success('Password changed successfully');
+  } catch (error: any) {
+    toast.error(error.message);
+    throw error;
+  }
+};
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, logout, register }}>
