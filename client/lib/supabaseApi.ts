@@ -60,11 +60,13 @@ export const contactsApi = {
 // Devices API
 // client/lib/supabaseApi.ts (or wherever devicesApi is defined)
 
+// client/lib/supabaseApi.ts
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export const devicesApi = {
   getAll: async () => {
-    const token = localStorage.getItem('token'); // Or however you store your session
+    const token = localStorage.getItem('token');
     const response = await fetch(`${API_URL}/api/devices`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -84,10 +86,20 @@ export const devicesApi = {
     if (!response.ok) throw new Error('Failed to connect');
     return response.json();
   },
-  
-  // ... your disconnect function
-};
 
+  // ADD THIS BLOCK TO FIX THE BUILD ERROR
+  disconnect: async (deviceId: string) => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/api/devices/${deviceId}`, {
+      method: 'DELETE', // Usually disconnect/delete uses the DELETE method
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+      }
+    });
+    if (!response.ok) throw new Error('Failed to disconnect');
+    return response.json();
+  }
+};
 // Messages API
 export const messagesApi = {
   getConversations: () => apiCall('messages/conversations'),
