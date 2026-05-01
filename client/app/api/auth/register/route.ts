@@ -1,28 +1,31 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 
-const SUPABASE_URL = 'https://xsxtbztyqjmlwfnibtdm.supabase.co'
-const EDGE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://your-railway-url.up.railway.app';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
+    const body = await req.json();
+    console.log('Register request:', body);
     
-    const response = await fetch(`${EDGE_FUNCTIONS_URL}/auth-handler/register`, {
+    const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-    })
+    });
     
-    const data = await response.json()
+    const data = await response.json();
+    console.log('Backend response:', data);
     
-    return NextResponse.json(data, { status: response.status })
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Proxy error:', error)
+    console.error('Register proxy error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to register' },
       { status: 500 }
-    )
+    );
   }
 }
