@@ -5,19 +5,18 @@ import { supabase } from '@/lib/supabaseClient';
 
 export async function GET(request: NextRequest) {
   try {
-    // Get the logged-in user's workspace
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
     
     if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user from token (simplified - in production, verify JWT)
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+    // Get user from token
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user's workspace
@@ -25,48 +24,45 @@ export async function GET(request: NextRequest) {
       .from('users')
       .select('workspace_id')
       .eq('id', user.id)
-      .single()
+      .single();
 
     if (userDataError) {
-      return NextResponse.json({ error: 'Workspace not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
     }
 
-    // Fetch contacts for this workspace
+    // Fetch contacts
     const { data: contacts, error } = await supabase
       .from('contacts')
       .select('*')
       .eq('workspace_id', userData.workspace_id)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching contacts:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    if (error) throw error;
 
-    return NextResponse.json(contacts || [])
+    return NextResponse.json(contacts || []);
   } catch (error) {
-    console.error('Error in GET /api/contacts:', error)
-    return NextResponse.json({ error: 'Failed to fetch contacts' }, { status: 500 })
+    console.error('Error in GET /api/contacts:', error);
+    return NextResponse.json({ error: 'Failed to fetch contacts' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { phoneNumber, name, email, tags } = body
+    const body = await request.json();
+    const { phoneNumber, name, email, tags } = body;
     
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
     
     if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
     if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user's workspace
@@ -74,10 +70,10 @@ export async function POST(request: NextRequest) {
       .from('users')
       .select('workspace_id')
       .eq('id', user.id)
-      .single()
+      .single();
 
     if (userDataError) {
-      return NextResponse.json({ error: 'Workspace not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
     }
 
     // Insert contact
@@ -91,16 +87,13 @@ export async function POST(request: NextRequest) {
         workspace_id: userData.workspace_id
       })
       .select()
-      .single()
+      .single();
 
-    if (error) {
-      console.error('Error creating contact:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    if (error) throw error;
 
-    return NextResponse.json(contact, { status: 201 })
+    return NextResponse.json(contact, { status: 201 });
   } catch (error) {
-    console.error('Error in POST /api/contacts:', error)
-    return NextResponse.json({ error: 'Failed to create contact' }, { status: 500 })
+    console.error('Error in POST /api/contacts:', error);
+    return NextResponse.json({ error: 'Failed to create contact' }, { status: 500 });
   }
 }
