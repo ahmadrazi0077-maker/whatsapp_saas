@@ -16,6 +16,7 @@ import automationRoutes from './routes/automation';
 import analyticsRoutes from './routes/analytics';
 import { createServer } from 'http';
 import { initializeSocket } from './socket';
+import './workers/broadcast.worker';
 
 dotenv.config();
 
