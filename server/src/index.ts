@@ -1,56 +1,37 @@
 import express from 'express';
 import { createServer } from 'http';
-import { Server } from 'socket.io';
+import { Server as SocketServer } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
-import authRoutes from './routes/auth';
-import whatsappRoutes from './routes/whatsapp';
-import messageRoutes from './routes/messages';
-import contactRoutes from './routes/contacts';
-import broadcastRoutes from './routes/broadcast';
-import automationRoutes from './routes/automation';
-import analyticsRoutes from './routes/analytics';
-import { createServer } from 'http';
-import { initializeSocket } from './socket';
-import './workers/broadcast.worker';
+import { supabase } from './lib/supabase';
+import { redis } from './lib/redis';
+import './queues/broadcast.queue';
 
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
-const prisma = new PrismaClient();
-const httpServer = createServer(app);
-const io = initializeSocket(httpServer);
 
-// Configure CORS for production
-const allowedOrigins = [
-  'https://your-frontend.vercel.app',  // Replace with your Vercel URL
-  'http://localhost:3000'
-];
-
-// Socket.IO
-const io = new Server(httpServer, {
+// Socket.io setup
+const io = new SocketServer(httpServer, {
   cors: {
-    origin: allowedOrigins,
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
     credentials: true,
   },
 });
 
 // Middleware
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
-}));
+app.use(helmet());
 app.use(compression());
 app.use(cors({
-  origin: allowedOrigins,
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true,
 }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -60,34 +41,102 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// Health check endpoint for Render
+// Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date(),
-    uptime: process.uptime()
-  });
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/whatsapp', whatsappRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/contacts', contactRoutes);
-app.use('/api/broadcast', broadcastRoutes);
-app.use('/api/automation', automationRoutes);
-app.use('/api/analytics', analyticsRoutes);
+// Auth endpoints (simplified for now)
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password, name, workspaceName } = req.body;
+    
+    // Create auth user
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    
+    if (authError) throw authError;
+    
+    // Create workspace
+    const { data: workspace, error: workspaceError } = await supabase
+      .from('workspaces')
+      .insert({ name: workspaceName || `${name}'s Workspace` })
+      .select()
+      .single();
+    
+    if (workspaceError) throw workspaceError;
+    
+    // Create user record
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .insert({
+        id: authData.user?.id,
+        email,
+        name,
+        workspace_id: workspace.id,
+      })
+      .select()
+      .single();
+    
+    if (userError) throw userError;
+    
+    res.json({
+      token: authData.session?.access_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        workspaceId: user.workspace_id,
+      },
+    });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
-// Socket.IO connection
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) throw error;
+    
+    const { data: user } = await supabase
+      .from('users')
+      .select('id, email, name, workspace_id')
+      .eq('email', email)
+      .single();
+    
+    res.json({
+      token: data.session?.access_token,
+      user: {
+        id: user?.id,
+        email: user?.email,
+        name: user?.name,
+        workspaceId: user?.workspace_id,
+      },
+    });
+  } catch (error: any) {
+    res.status(401).json({ error: error.message });
+  }
+});
+
+// Socket.io connection
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
   
   socket.on('join-conversation', (conversationId: string) => {
-    socket.join(`conv-${conversationId}`);
+    socket.join(`conv:${conversationId}`);
   });
   
-  socket.on('send-message', async (data) => {
-    io.to(`conv-${data.conversationId}`).emit('new-message', data);
+  socket.on('send-message', (data) => {
+    io.to(`conv:${data.conversationId}`).emit('new-message', data);
   });
   
   socket.on('disconnect', () => {
@@ -95,23 +144,11 @@ io.on('connection', (socket) => {
   });
 });
 
-// Make io accessible globally
-global.io = io;
-
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`WebSocket server ready`);
-});
-// Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
 const PORT = process.env.PORT || 4000;
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 WebSocket server ready at ${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📡 WebSocket server ready`);
+  console.log(`🗄️ Supabase connected`);
 });
 
-export { io, prisma };
+export { io };
