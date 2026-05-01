@@ -1,15 +1,12 @@
+// server/src/routes/devices.ts (or whatsapp.ts)
 import { Router } from 'express';
-import { WhatsAppController } from '../controllers/whatsappController';
-import { authenticate } from '../middleware/auth.middleware';
+import { getDevices, connectDevice } from '../controllers/whatsappController';
+import { authenticate } from '../middleware/auth'; // Your JWT auth middleware
 
 const router = Router();
-const whatsappController = new WhatsAppController();
 
-router.use(authenticate);
-router.post('/connect', whatsappController.connect);
-router.get('/devices', whatsappController.getDevices);
-router.get('/qr/:deviceId', whatsappController.getQR);
-router.post('/disconnect/:deviceId', whatsappController.disconnect);
-router.post('/send', whatsappController.sendMessage);
+// Notice we use the auth middleware here to prevent 401 errors!
+router.get('/', authenticate, getDevices);
+router.post('/connect', authenticate, connectDevice);
 
 export default router;
