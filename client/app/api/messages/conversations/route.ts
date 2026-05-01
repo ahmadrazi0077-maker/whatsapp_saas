@@ -1,34 +1,38 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
 
-const mockConversations = [
-  {
-    id: '1',
-    last_message: 'Hey, how are you?',
-    last_message_at: new Date().toISOString(),
-    status: 'ACTIVE',
-    unread_count: 2,
-    contact: {
-      id: '1',
-      name: 'Ahmed Raza',
-      phone_number: '+923001234567'
+export async function GET(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-  },
-  {
-    id: '2',
-    last_message: 'Thanks for your support!',
-    last_message_at: new Date(Date.now() - 3600000).toISOString(),
-    status: 'ACTIVE',
-    unread_count: 0,
-    contact: {
-      id: '2',
-      name: 'Sarah Khan',
-      phone_number: '+923008765432'
-    }
+
+    const { data: { user } } = await supabase.auth.getUser(token)
+    
+    const { data: userData } = await supabase
+      .from('users')
+      .select('workspace_id')
+      .eq('id', user.id)
+      .single()
+
+    const { data: conversations, error } = await supabase
+      .from('conversations')
+      .select(`
+        *,
+        contact:contacts(id, name, phone_number)
+      `)
+      .eq('workspace_id', userData?.workspace_id)
+      .order('last_message_at', { ascending: false })
+
+    if (error) throw error
+
+    return NextResponse.json(conversations || [])
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch conversations' }, { status: 500 })
   }
-];
-
-export async function GET(req: NextRequest) {
-  return NextResponse.json(mockConversations)
 }
