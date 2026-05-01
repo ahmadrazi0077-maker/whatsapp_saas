@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
 
 export default function APITestPage() {
   const [results, setResults] = useState<Record<string, any>>({});
@@ -13,7 +12,12 @@ export default function APITestPage() {
       const startTime = Date.now();
       const response = await fetch(url, options);
       const endTime = Date.now();
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        data = { error: 'Could not parse JSON response' };
+      }
       
       setResults(prev => ({
         ...prev,
@@ -34,20 +38,6 @@ export default function APITestPage() {
     }
   };
 
-  const createTestUser = async () => {
-    const testEmail = `test${Date.now()}@example.com`;
-    const { data, error } = await supabase.auth.signUp({
-      email: testEmail,
-      password: 'Test123456!',
-    });
-    
-    if (error) {
-      setResults(prev => ({ ...prev, createUser: { error: error.message } }));
-    } else {
-      setResults(prev => ({ ...prev, createUser: { success: true, email: testEmail, user: data.user } }));
-    }
-  };
-
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">API Test Dashboard</h1>
@@ -55,22 +45,15 @@ export default function APITestPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         <button
           onClick={() => testEndpoint('Health Check', '/api/health')}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
           disabled={loading['Health Check']}
         >
           {loading['Health Check'] ? 'Testing...' : 'Test Health Check'}
         </button>
         
         <button
-          onClick={createTestUser}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          Create Test User
-        </button>
-        
-        <button
           onClick={() => testEndpoint('Contacts API', '/api/contacts')}
-          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:opacity-50"
           disabled={loading['Contacts API']}
         >
           {loading['Contacts API'] ? 'Testing...' : 'Test Contacts API'}
@@ -78,10 +61,18 @@ export default function APITestPage() {
         
         <button
           onClick={() => testEndpoint('Devices API', '/api/devices')}
-          className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
+          className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 disabled:opacity-50"
           disabled={loading['Devices API']}
         >
           {loading['Devices API'] ? 'Testing...' : 'Test Devices API'}
+        </button>
+        
+        <button
+          onClick={() => testEndpoint('Conversations API', '/api/messages/conversations')}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+          disabled={loading['Conversations API']}
+        >
+          {loading['Conversations API'] ? 'Testing...' : 'Test Conversations API'}
         </button>
       </div>
       
@@ -89,7 +80,7 @@ export default function APITestPage() {
         {Object.entries(results).map(([key, result]) => (
           <div key={key} className="border rounded-lg p-4">
             <h2 className="font-bold text-lg mb-2">{key}</h2>
-            <pre className="bg-gray-100 p-3 rounded overflow-auto text-sm">
+            <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded overflow-auto text-sm">
               {JSON.stringify(result, null, 2)}
             </pre>
           </div>
