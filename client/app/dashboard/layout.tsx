@@ -1,87 +1,43 @@
 'use client';
 
 import { ReactNode } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: '📊' },
-  { name: 'Chats', href: '/dashboard/chats', icon: '💬' },
-  { name: 'Devices', href: '/dashboard/devices', icon: '📱' },
-  { name: 'Contacts', href: '/dashboard/contacts', icon: '👥' },
-  { name: 'Broadcast', href: '/dashboard/broadcast', icon: '📢' },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: '📈' },
-  { name: 'Settings', href: '/dashboard/settings', icon: '⚙️' },
-];
+import { useRouter } from 'next/navigation';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { user, logout } = useAuth();
-  const pathname = usePathname();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
-  const handleLogout = () => {
-    logout();
-    router.push('/auth/login');
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   if (!user) {
+    router.push('/auth/login');
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <nav className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">WhatsApp SaaS</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                {user?.name}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="text-red-600 hover:text-red-700 text-sm font-medium"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white shadow-sm p-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <h1 className="text-xl font-bold">WhatsApp SaaS</h1>
+          <button
+            onClick={() => {
+              localStorage.removeItem('token');
+              router.push('/auth/login');
+            }}
+            className="text-red-600"
+          >
+            Logout
+          </button>
         </div>
-      </nav>
-
-      <div className="flex">
-        {/* Sidebar */}
-        <div className="w-64 bg-white dark:bg-gray-800 shadow-sm min-h-screen">
-          <nav className="mt-5 px-2 space-y-1">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300'
-                      : 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <span className="mr-3 text-lg">{item.icon}</span>
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Main Content */}
-        <main className="flex-1 p-6">
-          {children}
-        </main>
       </div>
+      <main className="max-w-7xl mx-auto p-6">{children}</main>
     </div>
   );
 }
