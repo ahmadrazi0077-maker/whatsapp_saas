@@ -6,7 +6,9 @@ const port = process.env.PORT || 4000;
 
 // Important: CORS must be configured for your frontend URL
 app.use(cors({
-  origin: ['https://whatsapp-saas-hazel-nine.vercel.app', 'http://localhost:3000'],
+  origin: [ 'https://whatsappsaas-production-f4eb.up.railway.app',
+    'https://whatsapp-saas-hazel-nine.vercel.app',
+    'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
