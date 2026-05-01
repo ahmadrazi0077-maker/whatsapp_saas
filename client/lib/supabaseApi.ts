@@ -58,21 +58,35 @@ export const contactsApi = {
 }
 
 // Devices API
+// client/lib/supabaseApi.ts (or wherever devicesApi is defined)
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
 export const devicesApi = {
-  getAll: () => apiCall('devices'),
-  getById: (id: string) => apiCall(`devices/${id}`),
-  connect: (name?: string) => apiCall('devices', {
-    method: 'POST',
-    body: JSON.stringify({ name })
-  }),
-  disconnect: (deviceId: string) => apiCall(`devices/${deviceId}/disconnect`, {
-    method: 'POST'
-  }),
-  updateStatus: (deviceId: string, status: string) => apiCall(`devices/${deviceId}/status`, {
-    method: 'PUT',
-    body: JSON.stringify({ status })
-  }),
-}
+  getAll: async () => {
+    const token = localStorage.getItem('token'); // Or however you store your session
+    const response = await fetch(`${API_URL}/api/devices`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) throw new Error('Failed to fetch');
+    return response.json();
+  },
+
+  connect: async () => {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/api/devices/connect`, {
+      method: 'POST',
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) throw new Error('Failed to connect');
+    return response.json();
+  },
+  
+  // ... your disconnect function
+};
 
 // Messages API
 export const messagesApi = {
