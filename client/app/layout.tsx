@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'WhatsApp SaaS',
-  description: 'WhatsApp automation platform for businesses',
+  description: 'WhatsApp automation platform',
 };
 
 export default function RootLayout({
