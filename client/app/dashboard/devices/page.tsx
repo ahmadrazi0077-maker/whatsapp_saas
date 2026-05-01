@@ -39,7 +39,7 @@ export default function DevicesPage() {
     setConnecting(true);
     try {
       const result = await devicesApi.connect();
-      toast.success('Device connection initiated');
+      toast.success('Device connected successfully!');
       fetchDevices();
     } catch (error) {
       toast.error('Failed to connect device');
@@ -50,6 +50,7 @@ export default function DevicesPage() {
 
   const disconnectDevice = async (deviceId: string) => {
     if (!confirm('Are you sure you want to disconnect this device?')) return;
+    
     try {
       await devicesApi.disconnect(deviceId);
       toast.success('Device disconnected');
@@ -100,7 +101,10 @@ export default function DevicesPage() {
           <DevicePhoneMobileIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No devices connected</h3>
           <p className="text-gray-500 mb-4">Connect your first WhatsApp device to start messaging</p>
-          <button onClick={connectDevice} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+          <button
+            onClick={connectDevice}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          >
             Connect Device
           </button>
         </div>
@@ -135,7 +139,7 @@ export default function DevicesPage() {
                 {device.status === 'connected' && (
                   <button
                     onClick={() => disconnectDevice(device.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition"
                   >
                     <TrashIcon className="h-5 w-5" />
                   </button>
