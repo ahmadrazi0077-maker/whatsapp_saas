@@ -14,12 +14,16 @@ import contactRoutes from './routes/contacts';
 import broadcastRoutes from './routes/broadcast';
 import automationRoutes from './routes/automation';
 import analyticsRoutes from './routes/analytics';
+import { createServer } from 'http';
+import { initializeSocket } from './socket';
 
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
 const prisma = new PrismaClient();
+const httpServer = createServer(app);
+const io = initializeSocket(httpServer);
 
 // Configure CORS for production
 const allowedOrigins = [
@@ -90,6 +94,13 @@ io.on('connection', (socket) => {
   });
 });
 
+// Make io accessible globally
+global.io = io;
+
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`WebSocket server ready`);
+});
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Error:', err);
