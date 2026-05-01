@@ -1,44 +1,34 @@
-import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
+
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json()
-    const { email, password } = body
+    const { email, password } = await request.json()
     
-    console.log('Login request:', { email })
+    // Sign in with Supabase Auth
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
     
-    // For now, return mock success
-    // This will help you identify if the issue is with the Edge Function
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 401 })
+    }
+    
+    // Get user from your users table
+    const { data: userData } = await supabase
+      .from('users')
+      .select('id, email, name, role, workspace_id')
+      .eq('email', email)
+      .single()
+    
     return NextResponse.json({
-      token: 'mock-token-' + Date.now(),
-      user: {
-        id: '1',
-        email: email,
-        name: email?.split('@')[0] || 'User',
-        role: 'USER',
-        workspaceId: 'workspace_1',
-        createdAt: new Date().toISOString()
-      }
+      token: data.session?.access_token,
+      user: userData
     })
-    
-    /* REAL IMPLEMENTATION - Uncomment when Edge Function is fixed
-    const SUPABASE_URL = 'https://xsxtbztyqjmlwfnibtdm.supabase.co'
-    const EDGE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`
-    
-    const response = await fetch(`${EDGE_FUNCTIONS_URL}/auth-handler/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
-    
-    const data = await response.json()
-    return NextResponse.json(data, { status: response.status })
-    */
   } catch (error) {
-    console.error('Login proxy error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Login failed' }, { status: 500 })
   }
 }
