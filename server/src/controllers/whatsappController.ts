@@ -1,62 +1,60 @@
+// server/src/controllers/whatsappController.ts
 import { Request, Response } from 'express';
-import { prisma } from '../lib/prisma';
+import { PrismaClient } from '@prisma/client';
 
-export class WhatsAppController {
-  async getDevices(req: Request, res: Response) {
-    try {
-      const workspaceId = (req as any).workspaceId;
-      const devices = await prisma.device.findMany({
-        where: { workspaceId },
-        orderBy: { createdAt: 'desc' },
-      });
-      
-      res.json(devices);
-    } catch (error) {
-      console.error('Get devices error:', error);
-      res.status(500).json({ error: 'Failed to get devices' });
+const prisma = new PrismaClient();
+
+// 1. Get all devices for the user
+export const getDevices = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id; // Assumes your auth middleware attaches the user
+    
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
+
+    const devices = await prisma.device.findMany({
+      where: { userId: userId },
+      orderBy: { created_at: 'desc' }
+    });
+
+    return res.status(200).json(devices);
+  } catch (error: any) {
+    console.error("Error in getDevices:", error);
+    return res.status(500).json({ error: "Failed to fetch devices", details: error.message });
   }
-  
-  async connectDevice(req: Request, res: Response) {
-    try {
-      const workspaceId = (req as any).workspaceId;
-      
-      const device = await prisma.device.create({
-        data: {
-          name: `Device ${Date.now()}`,
-          status: 'CONNECTING',
-          workspaceId,
-        },
-      });
-      
-      // TODO: Implement actual WhatsApp Web connection
-      // This would use whatsapp-web.js to generate QR code
-      
-      res.json({ 
-        deviceId: device.id, 
-        status: 'CONNECTING',
-        message: 'Device connection initiated. Scan QR code to connect.'
-      });
-    } catch (error) {
-      console.error('Connect device error:', error);
-      res.status(500).json({ error: 'Failed to connect device' });
+};
+
+// 2. Connect (Add) a new device
+export const connectDevice = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
+
+    // Create a new device record in the database
+    // Initially, the status is 'connecting' because the user hasn't scanned a QR code yet
+    const newDevice = await prisma.device.create({
+      data: {
+        userId: userId,
+        name: `Device ${Math.floor(Math.random() * 1000)}`, // Give it a temporary name
+        status: 'connecting', 
+        phone_number: '', // Will be updated once WhatsApp actually connects
+      }
+    });
+
+    // TODO: In the future, you will trigger your WhatsApp library (like whatsapp-web.js)
+    // here to generate a QR code and send it to the frontend via WebSockets.
+
+    return res.status(201).json({ 
+      message: "Device connection initiated", 
+      device: newDevice 
+    });
+
+  } catch (error: any) {
+    console.error("Error in connectDevice:", error);
+    return res.status(500).json({ error: "Failed to connect device", details: error.message });
   }
-  
-  async disconnectDevice(req: Request, res: Response) {
-    try {
-      const { deviceId } = req.params;
-      const workspaceId = (req as any).workspaceId;
-      
-      await prisma.device.updateMany({
-        where: { id: deviceId, workspaceId },
-        data: { status: 'DISCONNECTED' },
-      });
-      
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Disconnect device error:', error);
-      res.status(500).json({ error: 'Failed to disconnect device' });
-    }
-  }
-}
+};
