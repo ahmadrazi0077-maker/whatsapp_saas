@@ -4,17 +4,21 @@ export async function POST(req: NextRequest) {
   try {
     const { name, email, password } = await req.json();
     
-    const token = Buffer.from(JSON.stringify({ email, exp: Date.now() + 86400000 })).toString('base64');
+    const token = Buffer.from(JSON.stringify({ 
+      email, 
+      userId: 'user_' + Date.now(),
+      exp: Date.now() + 7 * 24 * 60 * 60 * 1000 
+    })).toString('base64');
     
     return NextResponse.json({
+      success: true,
       token,
       user: {
-        id: Date.now().toString(),
+        id: 'user_' + Date.now(),
         name,
         email,
         role: 'USER',
-        workspaceId: 'workspace_1',
-        createdAt: new Date().toISOString()
+        workspaceId: 'workspace_1'
       }
     });
   } catch (error) {
