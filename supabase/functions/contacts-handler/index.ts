@@ -4,64 +4,87 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-// CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Max-Age': '86400',
+  'Content-Type': 'application/json'
 }
 
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { 
-      status: 204, 
-      headers: corsHeaders 
-    })
+    return new Response('ok', { status: 204, headers: corsHeaders })
   }
 
   const url = new URL(req.url)
   const endpoint = url.pathname.split('/').pop() || ''
+  
+  console.log(`[Contacts Handler] ${req.method} /${endpoint}`)
 
-  // Simple response for testing
-  if (endpoint === 'ping') {
-    return new Response(JSON.stringify({ message: 'pong' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200
-    })
-  }
-
-  // Get all contacts (simplified)
+  // GET all contacts
   if (endpoint === 'contacts' && req.method === 'GET') {
-    return new Response(JSON.stringify([]), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200
+    const { data: contacts, error } = await supabase
+      .from('contacts')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      return new Response(JSON.stringify({ error: error.message }), { 
+        status: 500, 
+        headers: corsHeaders 
+      })
+    }
+
+    return new Response(JSON.stringify(contacts), { 
+      status: 200, 
+      headers: corsHeaders 
     })
   }
 
-  // Create contact (simplified)
+  // CREATE contact
   if (endpoint === 'create' && req.method === 'POST') {
     try {
-      const body = await req.json()
-      return new Response(JSON.stringify({ 
-        id: Date.now().toString(),
-        ...body,
-        created_at: new Date().toISOString()
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 201
+      const { phoneNumber, name, email, tags } = await req.json()
+
+      const { data: contact, error } = await supabase
+        .from('contacts')
+        .insert({
+          phone_number: phoneNumber,
+          name: name || null,
+          email: email || null,
+          tags: tags || []
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return new Response(JSON.stringify(contact), { 
+        status: 201, 
+        headers: corsHeaders 
       })
-    } catch {
-      return new Response(JSON.stringify({ error: 'Failed to create' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
+    } catch (error) {
+      return new Response(JSON.stringify({ error: error.message }), { 
+        status: 500, 
+        headers: corsHeaders 
       })
     }
   }
 
-  return new Response(JSON.stringify({ error: 'Not found' }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    status: 404
+  // PING endpoint for testing
+  if (endpoint === 'ping' && req.method === 'GET') {
+    return new Response(JSON.stringify({ 
+      message: 'Contacts handler is working!',
+      timestamp: new Date().toISOString()
+    }), { 
+      status: 200, 
+      headers: corsHeaders 
+    })
+  }
+
+  return new Response(JSON.stringify({ error: 'Endpoint not found' }), { 
+    status: 404, 
+    headers: corsHeaders 
   })
 })
