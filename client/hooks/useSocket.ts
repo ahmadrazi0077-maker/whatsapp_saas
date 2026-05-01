@@ -2,15 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { useAuth } from './useAuth';
 
 export function useSocket() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const { token } = useAuth();
 
   useEffect(() => {
+    if (!token) return;
+
     const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000', {
+      auth: { token },
       transports: ['websocket'],
-      autoConnect: true,
     });
 
     socketInstance.on('connect', () => {
@@ -28,25 +32,37 @@ export function useSocket() {
     return () => {
       socketInstance.close();
     };
-  }, []);
+  }, [token]);
 
-  const emit = (event: string, data: any) => {
-    if (socket && isConnected) {
-      socket.emit(event, data);
-    }
+  const joinConversation = (conversationId: string) => {
+    socket?.emit('join-conversation', conversationId);
   };
 
-  const on = (event: string, callback: (data: any) => void) => {
-    if (socket) {
-      socket.on(event, callback);
-    }
+  const leaveConversation = (conversationId: string) => {
+    socket?.emit('leave-conversation', conversationId);
   };
 
-  const off = (event: string, callback?: (data: any) => void) => {
-    if (socket) {
-      socket.off(event, callback);
-    }
+  const sendTyping = (conversationId: string, isTyping: boolean) => {
+    socket?.emit('typing', { conversationId, isTyping });
   };
 
-  return { socket, isConnected, emit, on, off };
+  const onNewMessage = (callback: (message: any) => void) => {
+    socket?.on('new-message', callback);
+    return () => socket?.off('new-message', callback);
+  };
+
+  const onTyping = (callback: (data: any) => void) => {
+    socket?.on('user-typing', callback);
+    return () => socket?.off('user-typing', callback);
+  };
+
+  return {
+    socket,
+    isConnected,
+    joinConversation,
+    leaveConversation,
+    sendTyping,
+    onNewMessage,
+    onTyping,
+  };
 }
