@@ -1,127 +1,176 @@
-import { Client, LocalAuth } from 'whatsapp-web.js';
+import makeWASocket, {
+  DisconnectReason,
+  useMultiFileAuthState,
+  Browsers,
+  makeInMemoryStore,
+} from '@whiskeysockets/baileys';
+import { Boom } from '@hapi/boom';
 import QRCode from 'qrcode';
-import { prisma } from '../../lib/prisma';
+import { supabase } from '../../lib/supabase';
 
 export class WhatsAppClient {
-  private client: Client;
+  private sock: any;
   private deviceId: string;
-  
-  constructor(deviceId: string, sessionData?: any) {
+  private workspaceId: string;
+  private isConnecting = false;
+  private qrCallback: (qr: string) => void;
+
+  constructor(deviceId: string, workspaceId: string, onQR: (qr: string) => void) {
     this.deviceId = deviceId;
-    this.client = new Client({
-      authStrategy: new LocalAuth({
-        clientId: deviceId,
-        dataPath: `./sessions/${deviceId}`,
-      }),
-      puppeteer: {
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      },
-    });
-    
-    this.setupEventHandlers();
+    this.workspaceId = workspaceId;
+    this.qrCallback = onQR;
   }
-  
-  private setupEventHandlers() {
-    this.client.on('qr', async (qr) => {
-      const qrCodeDataUrl = await QRCode.toDataURL(qr);
-      await prisma.device.update({
-        where: { id: this.deviceId },
-        data: { qrCode: qrCodeDataUrl, status: 'LOADING' },
-      });
-    });
+
+  async connect() {
+    if (this.isConnecting) return;
+    this.isConnecting = true;
+
+    const { state, saveCreds } = await useMultiFileAuthState(`./auth/${this.workspaceId}/${this.deviceId}`);
     
-    this.client.on('ready', async () => {
-      const info = this.client.info;
-      await prisma.device.update({
-        where: { id: this.deviceId },
-        data: {
-          status: 'CONNECTED',
-          phoneNumber: info.wid.user,
-          lastConnected: new Date(),
-          qrCode: null,
-        },
-      });
+    const store = makeInMemoryStore({ logger: pino().child({ level: 'silent' }) });
+
+    this.sock = makeWASocket({
+      auth: state,
+      printQRInTerminal: false,
+      browser: Browsers.macOS('Desktop'),
+      logger: pino({ level: 'silent' }),
     });
-    
-    this.client.on('message', async (message) => {
-      // Handle incoming messages
-      const contact = await message.getContact();
-      await this.saveIncomingMessage(message, contact);
+
+    store.bind(this.sock.ev);
+
+    // Handle QR Code
+    this.sock.ev.on('connection.update', async (update: any) => {
+      const { connection, lastDisconnect, qr } = update;
+      
+      if (qr) {
+        const qrImage = await QRCode.toDataURL(qr);
+        this.qrCallback(qrImage);
+        
+        // Save QR to database
+        await supabase
+          .from('devices')
+          .update({ qr_code: qrImage, status: 'awaiting_scan' })
+          .eq('id', this.deviceId);
+      }
+      
+      if (connection === 'close') {
+        const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+        if (shouldReconnect) {
+          console.log('Reconnecting...');
+          this.connect();
+        } else {
+          await supabase
+            .from('devices')
+            .update({ status: 'disconnected' })
+            .eq('id', this.deviceId);
+        }
+      }
+      
+      if (connection === 'open') {
+        console.log('WhatsApp connected!');
+        
+        // Get device info
+        const info = this.sock.user;
+        await supabase
+          .from('devices')
+          .update({
+            status: 'connected',
+            phone_number: info.id.split(':')[0],
+            last_connected: new Date().toISOString(),
+            qr_code: null,
+          })
+          .eq('id', this.deviceId);
+      }
     });
-    
-    this.client.on('disconnected', async (reason) => {
-      await prisma.device.update({
-        where: { id: this.deviceId },
-        data: { status: 'DISCONNECTED', lastDisconnected: new Date() },
-      });
+
+    // Handle incoming messages
+    this.sock.ev.on('messages.upsert', async ({ messages }) => {
+      for (const msg of messages) {
+        if (!msg.message) continue;
+        
+        const from = msg.key.remoteJid;
+        const body = msg.message.conversation || msg.message.extendedTextMessage?.text;
+        
+        if (body && !msg.key.fromMe) {
+          // Save incoming message to database
+          await this.saveIncomingMessage(from, body);
+          
+          // Emit to WebSocket
+          global.io?.to(`workspace:${this.workspaceId}`).emit('new-message', {
+            from,
+            body,
+            timestamp: msg.messageTimestamp,
+          });
+        }
+      }
     });
+
+    this.sock.ev.on('creds.update', saveCreds);
+    this.isConnecting = false;
   }
-  
-  private async saveIncomingMessage(message: any, contact: any) {
-    // Find or create contact
-    let dbContact = await prisma.contact.findFirst({
-      where: { phoneNumber: contact.number },
-    });
+
+  async sendMessage(to: string, message: string): Promise<any> {
+    if (!this.sock) throw new Error('WhatsApp not connected');
     
-    if (!dbContact) {
-      const device = await prisma.device.findUnique({ where: { id: this.deviceId } });
-      dbContact = await prisma.contact.create({
-        data: {
-          phoneNumber: contact.number,
-          name: contact.pushname || contact.name,
-          workspaceId: device!.workspaceId,
-        },
-      });
+    const formattedNumber = to.includes('@') ? to : `${to}@s.whatsapp.net`;
+    return await this.sock.sendMessage(formattedNumber, { text: message });
+  }
+
+  async disconnect() {
+    if (this.sock) {
+      await this.sock.logout();
     }
+  }
+
+  private async saveIncomingMessage(from: string, body: string) {
+    // Find or create contact
+    const { data: contact } = await supabase
+      .from('contacts')
+      .upsert({
+        phone_number: from.split('@')[0],
+        workspace_id: this.workspaceId,
+      })
+      .select()
+      .single();
     
     // Find or create conversation
-    let conversation = await prisma.conversation.findFirst({
-      where: { contactId: dbContact.id, deviceId: this.deviceId },
-    });
+    let { data: conversation } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('contact_id', contact.id)
+      .eq('device_id', this.deviceId)
+      .single();
     
     if (!conversation) {
-      conversation = await prisma.conversation.create({
-        data: {
-          contactId: dbContact.id,
-          deviceId: this.deviceId,
-        },
-      });
+      const { data: newConv } = await supabase
+        .from('conversations')
+        .insert({
+          contact_id: contact.id,
+          device_id: this.deviceId,
+          workspace_id: this.workspaceId,
+        })
+        .select()
+        .single();
+      conversation = newConv;
     }
     
     // Save message
-    await prisma.message.create({
-      data: {
-        messageId: message.id.id,
-        body: message.body,
-        fromMe: false,
-        conversationId: conversation.id,
-        contactId: dbContact.id,
-        deviceId: this.deviceId,
-      },
-    });
+    await supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversation.id,
+        body,
+        from_me: false,
+      });
     
     // Update conversation
-    await prisma.conversation.update({
-      where: { id: conversation.id },
-      data: {
-        lastMessage: message.body,
-        lastMessageAt: new Date(),
-      },
-    });
-  }
-  
-  async initialize() {
-    await this.client.initialize();
-  }
-  
-  async sendMessage(to: string, message: string) {
-    const chat = await this.client.getChatById(`${to}@c.us`);
-    const msg = await chat.sendMessage(message);
-    return { messageId: msg.id.id, success: true };
-  }
-  
-  async logout() {
-    await this.client.logout();
+    await supabase
+      .from('conversations')
+      .update({
+        last_message: body,
+        last_message_at: new Date().toISOString(),
+        unread_count: supabase.sql`unread_count + 1`,
+      })
+      .eq('id', conversation.id);
   }
 }
