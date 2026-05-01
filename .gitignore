@@ -1,4 +1,0 @@
-# Next.js config files (keep only .js)
-next.config.ts
-next.config.mjs
-*.tsbuildinfo 
