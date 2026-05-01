@@ -1,31 +1,31 @@
-import express from 'express';
-import { createServer } from 'http';
+const express = require('express');
+const cors = require('cors');
 
 const app = express();
-const httpServer = createServer(app);
+const port = process.env.PORT || 4000;
 
+app.use(cors());
 app.use(express.json());
 
-// Health check endpoint
+// Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Auth endpoints (simplified)
-app.post('/api/auth/login', async (req, res) => {
+// Auth endpoints
+app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
-  // Simple mock response for now
   res.json({
     token: 'mock-token-' + Date.now(),
-    user: { id: '1', email, name: email?.split('@')[0], role: 'USER' }
+    user: { id: '1', email, name: email?.split('@')[0] || 'User' }
   });
 });
 
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', (req, res) => {
   const { name, email, password } = req.body;
   res.json({
     token: 'mock-token-' + Date.now(),
-    user: { id: '1', email, name, role: 'USER' }
+    user: { id: '1', email, name }
   });
 });
 
@@ -37,10 +37,10 @@ app.get('/api/contacts', (req, res) => {
 });
 
 app.post('/api/contacts', (req, res) => {
-  res.json({ id: Date.now().toString(), ...req.body, created_at: new Date().toISOString() });
+  const newContact = { id: Date.now().toString(), ...req.body, created_at: new Date().toISOString() };
+  res.json(newContact);
 });
 
-const PORT = process.env.PORT || 4000;
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
