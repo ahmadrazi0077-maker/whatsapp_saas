@@ -1,8 +1,8 @@
 {
-  "name": "whatsapp-saas-backend",
+  "name": "whatsapp-saas",
   "version": "1.0.0",
   "scripts": {
-    "start": "node server/index.js"
+    "start": "cd server && npm install && node index.js"
   },
   "engines": {
     "node": "24.x"
