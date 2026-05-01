@@ -1,48 +1,82 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
 
-const SUPABASE_URL = 'https://xsxtbztyqjmlwfnibtdm.supabase.co'
-const EDGE_FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`
-
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const body = await req.json()
-    const authHeader = req.headers.get('authorization') || ''
+    const body = await request.json();
+    const { name, email, tags } = body;
     
-    const response = await fetch(`${EDGE_FUNCTIONS_URL}/contacts-handler/update`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authHeader,
-      },
-      body: JSON.stringify({ id: params.id, ...body }),
-    })
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
     
-    const data = await response.json()
-    return NextResponse.json(data, { status: response.status })
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: { user } } = await supabase.auth.getUser(token);
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: contact, error } = await supabase
+      .from('contacts')
+      .update({
+        name: name || null,
+        email: email || null,
+        tags: tags || [],
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', params.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json(contact);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to update contact' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to update contact' },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const authHeader = req.headers.get('authorization') || ''
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
     
-    const response = await fetch(`${EDGE_FUNCTIONS_URL}/contacts-handler/delete`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authHeader,
-      },
-      body: JSON.stringify({ id: params.id }),
-    })
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: { user } } = await supabase.auth.getUser(token);
     
-    const data = await response.json()
-    return NextResponse.json(data, { status: response.status })
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { error } = await supabase
+      .from('contacts')
+      .delete()
+      .eq('id', params.id);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete contact' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to delete contact' },
+      { status: 500 }
+    );
   }
 }
-
