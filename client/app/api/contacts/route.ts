@@ -3,68 +3,39 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 
-export async function GET(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '');
-    
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Get user from token
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Get user's workspace
-    const { data: userData, error: userDataError } = await supabase
-      .from('users')
-      .select('workspace_id')
-      .eq('id', user.id)
-      .single();
-
-    if (userDataError) {
-      return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
-    }
-
-    // Fetch contacts
-    const { data: contacts, error } = await supabase
-      .from('contacts')
-      .select('*')
-      .eq('workspace_id', userData.workspace_id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    return NextResponse.json(contacts || []);
-  } catch (error) {
-    console.error('Error in GET /api/contacts:', error);
-    return NextResponse.json({ error: 'Failed to fetch contacts' }, { status: 500 });
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
+    const authHeader = request.headers.get('authorization');
+    console.log('Auth header present:', !!authHeader);
+    
+    if (!authHeader) {
+      return NextResponse.json({ error: 'No authorization header' }, { status: 401 });
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    console.log('Token length:', token?.length);
+    
+    if (!token) {
+      return NextResponse.json({ error: 'No token provided' }, { status: 401 });
+    }
+
+    // Verify token with Supabase
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError) {
+      console.error('Token verification error:', userError.message);
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+    
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 });
+    }
+    
+    console.log('User authenticated:', user.email);
+    
     const body = await request.json();
     const { phoneNumber, name, email, tags } = body;
     
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '');
-    
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Get user
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     // Get user's workspace
     const { data: userData, error: userDataError } = await supabase
       .from('users')
@@ -73,6 +44,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userDataError) {
+      console.error('Workspace fetch error:', userDataError);
       return NextResponse.json({ error: 'Workspace not found' }, { status: 404 });
     }
 
@@ -89,11 +61,16 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Contact insert error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
+    console.log('Contact created:', contact.id);
     return NextResponse.json(contact, { status: 201 });
+    
   } catch (error) {
     console.error('Error in POST /api/contacts:', error);
-    return NextResponse.json({ error: 'Failed to create contact' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
