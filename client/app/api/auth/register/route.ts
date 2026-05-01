@@ -1,31 +1,23 @@
-export const dynamic = 'force-dynamic';
-
 import { NextRequest, NextResponse } from 'next/server';
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://whatsappsaas-production-f4eb.up.railway.app';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    console.log('Register request:', body);
+    const { name, email, password } = await req.json();
     
-    const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
+    const token = Buffer.from(JSON.stringify({ email, exp: Date.now() + 86400000 })).toString('base64');
+    
+    return NextResponse.json({
+      token,
+      user: {
+        id: Date.now().toString(),
+        name,
+        email,
+        role: 'USER',
+        workspaceId: 'workspace_1',
+        createdAt: new Date().toISOString()
+      }
     });
-    
-    const data = await response.json();
-    console.log('Backend response:', data);
-    
-    return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Register error:', error);
-    return NextResponse.json(
-      { error: 'Registration failed', details: String(error) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Registration failed' }, { status: 500 });
   }
 }
