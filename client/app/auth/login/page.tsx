@@ -2,40 +2,19 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
     
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        localStorage.setItem('token', data.token);
-        router.push('/dashboard');
-      } else {
-        setError(data.error || 'Login failed');
-      }
-    } catch (err) {
-      setError('Network error');
-    } finally {
-      setLoading(false);
-    }
+    // Simple mock login
+    localStorage.setItem('token', 'mock-token');
+    router.push('/dashboard');
   };
 
   return (
@@ -70,18 +49,11 @@ export default function LoginPage() {
           </div>
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
           >
-            {loading ? 'Loading...' : 'Login'}
+            Login
           </button>
         </form>
-        <p className="text-center mt-4 text-sm">
-          Don't have an account?{' '}
-          <Link href="/auth/register" className="text-blue-600 hover:underline">
-            Register
-          </Link>
-        </p>
       </div>
     </div>
   );
