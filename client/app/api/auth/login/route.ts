@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://your-railway-url.up.railway.app';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://whatsappsaas-production-f4eb.up.railway.app';
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,9 +22,9 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error('Login proxy error:', error);
+    console.error('Login error:', error);
     return NextResponse.json(
-      { error: 'Failed to login' },
+      { error: 'Login failed', details: String(error) },
       { status: 500 }
     );
   }
