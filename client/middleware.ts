@@ -2,23 +2,37 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('token')?.value;
+  // Get token from cookies or headers
+  const token = request.cookies.get('token')?.value || 
+                request.headers.get('authorization')?.replace('Bearer ', '');
+  
   const { pathname } = request.nextUrl;
 
-  // Public paths
-  const isAuthPage = pathname.startsWith('/auth/login') || pathname.startsWith('/auth/register');
-  const isPublicPath = pathname === '/' || pathname === '/_next' || pathname.startsWith('/api');
+  // Public paths that don't require authentication
+  const isAuthPage = pathname.startsWith('/auth/login') || 
+                     pathname.startsWith('/auth/register');
+  const isPublicPath = pathname === '/' || 
+                       pathname === '/api/auth/login' || 
+                       pathname === '/api/auth/register';
+  const isApiPath = pathname.startsWith('/api');
   
-  // Protected paths
-  const isDashboardPath = pathname.startsWith('/dashboard');
+  // Protected paths that require authentication
+  const isProtectedPath = pathname.startsWith('/dashboard');
+
+  // Allow API routes to pass through (they handle their own auth)
+  if (isApiPath) {
+    return NextResponse.next();
+  }
 
   // Redirect logic
-  if (!token && isDashboardPath) {
-    return NextResponse.redirect(new URL('/auth/login', request.url));
+  if (!token && isProtectedPath) {
+    const loginUrl = new URL('/auth/login', request.url);
+    return NextResponse.redirect(loginUrl);
   }
 
   if (token && isAuthPage) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const dashboardUrl = new URL('/dashboard', request.url);
+    return NextResponse.redirect(dashboardUrl);
   }
 
   return NextResponse.next();
@@ -33,6 +47,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!_next/static|_next/image|favicon.ico|public|api).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
 };
