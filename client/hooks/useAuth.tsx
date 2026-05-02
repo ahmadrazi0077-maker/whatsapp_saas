@@ -9,12 +9,10 @@ interface User {
   email: string;
   role: string;
   workspaceId: string;
-  createdAt?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -32,86 +30,56 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      setToken(storedToken);
-      fetchUser(storedToken);
-    } else {
-      setLoading(false);
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    if (token && savedUser) {
+      setUser(JSON.parse(savedUser));
     }
+    setLoading(false);
   }, []);
 
-  const fetchUser = async (authToken: string) => {
-    try {
-      const response = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      } else {
-        localStorage.removeItem('token');
-        setToken(null);
-      }
-    } catch (error) {
-      console.error('Fetch user error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const login = async (email: string, password: string) => {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Login failed');
-    }
-    
-    localStorage.setItem('token', data.token);
-    setToken(data.token);
-    setUser(data.user);
+    // Simple mock login
+    const userData = {
+      id: '1',
+      name: email.split('@')[0],
+      email,
+      role: 'USER',
+      workspaceId: 'workspace_1'
+    };
+    localStorage.setItem('token', 'mock-token');
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
     router.push('/dashboard');
   };
 
   const logout = () => {
     localStorage.removeItem('token');
-    setToken(null);
+    localStorage.removeItem('user');
     setUser(null);
     router.push('/auth/login');
   };
 
   const register = async (data: RegisterData) => {
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    
-    const result = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(result.error || 'Registration failed');
-    }
-    
-    localStorage.setItem('token', result.token);
-    setToken(result.token);
-    setUser(result.user);
+    const userData = {
+      id: Date.now().toString(),
+      name: data.name,
+      email: data.email,
+      role: 'USER',
+      workspaceId: 'workspace_1'
+    };
+    localStorage.setItem('token', 'mock-token');
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
     router.push('/dashboard');
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, register }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
