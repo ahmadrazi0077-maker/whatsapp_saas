@@ -1,101 +1,65 @@
 const API_BASE_URL = '/api'
 
-const getToken = () => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('token')
-  }
-  return null
-}
-
-async function apiCall(endpoint: string, options: RequestInit = {}) {
-  const token = getToken()
-  
-  const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-      ...options.headers,
-    },
-  })
-  
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }))
-    throw new Error(error.error || `API call failed: ${response.status}`)
-  }
-  
-  return response.json()
-}
-
 export const authApi = {
-  login: (email: string, password: string) => apiCall('auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ email, password })
-  }),
-  register: (data: any) => apiCall('auth/register', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
-  getMe: () => apiCall('auth/me'),
-}
+  login: async (email: string, password: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    return response.json();
+  },
+  register: async (data: any) => {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return response.json();
+  }
+};
 
 export const contactsApi = {
-  getAll: () => apiCall('contacts'),
-  create: (data: any) => apiCall('contacts', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
-  update: (id: string, data: any) => apiCall(`contacts/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data)
-  }),
-  delete: (id: string) => apiCall(`contacts/${id}`, {
-    method: 'DELETE'
-  }),
-}
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/contacts`);
+    return response.json();
+  }
+};
 
 export const devicesApi = {
-  getAll: () => apiCall('devices'),
-  connect: (name?: string) => apiCall('devices', {
-    method: 'POST',
-    body: JSON.stringify({ name })
-  }),
-  disconnect: (deviceId: string) => apiCall(`devices/${deviceId}/disconnect`, {
-    method: 'POST'
-  }),
-}
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/devices`);
+    return response.json();
+  }
+};
 
 export const messagesApi = {
-  getConversations: () => apiCall('messages/conversations'),
-  sendMessage: (conversationId: string, message: string) => apiCall('messages/send', {
-    method: 'POST',
-    body: JSON.stringify({ conversationId, message })
-  }),
-}
+  getConversations: async () => {
+    const response = await fetch(`${API_BASE_URL}/messages/conversations`);
+    return response.json();
+  }
+};
 
 export const broadcastApi = {
-  getCampaigns: () => apiCall('broadcast/campaigns'),
-  create: (data: any) => apiCall('broadcast/campaigns', {
-    method: 'POST',
-    body: JSON.stringify(data)
-  }),
-}
+  getCampaigns: async () => {
+    const response = await fetch(`${API_BASE_URL}/broadcast/campaigns`);
+    return response.json();
+  }
+};
 
 export const analyticsApi = {
   getDashboardStats: async () => {
-    const contacts = await contactsApi.getAll().catch(() => [])
-    const devices = await devicesApi.getAll().catch(() => [])
-    
+    const contacts = await contactsApi.getAll().catch(() => []);
     return {
       stats: {
         totalMessages: 0,
         totalContacts: contacts.length,
         activeChats: 0,
-        devices: devices.length,
+        devices: 0,
         responseRate: 94,
         avgResponseTime: 45,
         satisfactionRate: 98,
       }
-    }
-  },
-}
+    };
+  }
+};
