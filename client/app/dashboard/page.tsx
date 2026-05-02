@@ -1,25 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
     if (!token) {
       router.push('/auth/login');
-    } else if (userData) {
-      setUser(JSON.parse(userData));
     }
   }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
     router.push('/auth/login');
   };
 
@@ -28,12 +23,9 @@ export default function DashboardPage() {
       <nav className="bg-white shadow-sm p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <h1 className="text-xl font-bold">WhatsApp SaaS</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-gray-600">{user?.name}</span>
-            <button onClick={handleLogout} className="text-red-600 hover:text-red-700">
-              Logout
-            </button>
-          </div>
+          <button onClick={handleLogout} className="text-red-600">
+            Logout
+          </button>
         </div>
       </nav>
       <main className="max-w-7xl mx-auto p-6">
