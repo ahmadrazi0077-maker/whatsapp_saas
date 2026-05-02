@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -30,52 +30,46 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    if (token && savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
-  }, []);
-
   const login = async (email: string, password: string) => {
-    // Simple mock login
-    const userData = {
-      id: '1',
-      name: email.split('@')[0],
-      email,
-      role: 'USER',
-      workspaceId: 'workspace_1'
-    };
-    localStorage.setItem('token', 'mock-token');
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
-    router.push('/dashboard');
+    setLoading(true);
+    // Mock login
+    setTimeout(() => {
+      setUser({
+        id: '1',
+        name: email.split('@')[0],
+        email,
+        role: 'USER',
+        workspaceId: 'workspace_1'
+      });
+      localStorage.setItem('token', 'mock-token');
+      setLoading(false);
+      router.push('/dashboard');
+    }, 500);
   };
 
   const logout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
     setUser(null);
     router.push('/auth/login');
   };
 
   const register = async (data: RegisterData) => {
-    const userData = {
-      id: Date.now().toString(),
-      name: data.name,
-      email: data.email,
-      role: 'USER',
-      workspaceId: 'workspace_1'
-    };
-    localStorage.setItem('token', 'mock-token');
-    localStorage.setItem('user', JSON.stringify(userData));
-    setUser(userData);
-    router.push('/dashboard');
+    setLoading(true);
+    setTimeout(() => {
+      setUser({
+        id: Date.now().toString(),
+        name: data.name,
+        email: data.email,
+        role: 'USER',
+        workspaceId: 'workspace_1'
+      });
+      localStorage.setItem('token', 'mock-token');
+      setLoading(false);
+      router.push('/dashboard');
+    }, 500);
   };
 
   return (
