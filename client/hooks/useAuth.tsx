@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface User {
   id: string;
@@ -8,10 +9,12 @@ interface User {
   email: string;
   role: string;
   workspaceId: string;
+  createdAt?: string;
 }
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -29,25 +32,31 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetchUser(token);
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setToken(storedToken);
+      fetchUser(storedToken);
     } else {
       setLoading(false);
     }
   }, []);
 
-  const fetchUser = async (token: string) => {
+  const fetchUser = async (authToken: string) => {
     try {
       const response = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${authToken}` },
       });
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
+      } else {
+        localStorage.removeItem('token');
+        setToken(null);
       }
     } catch (error) {
       console.error('Fetch user error:', error);
@@ -60,37 +69,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password }),
     });
     
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error);
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Login failed');
+    }
     
     localStorage.setItem('token', data.token);
+    setToken(data.token);
     setUser(data.user);
+    router.push('/dashboard');
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    setToken(null);
     setUser(null);
+    router.push('/auth/login');
   };
 
   const register = async (data: RegisterData) => {
     const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     });
     
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error);
+    
+    if (!response.ok) {
+      throw new Error(result.error || 'Registration failed');
+    }
     
     localStorage.setItem('token', result.token);
+    setToken(result.token);
     setUser(result.user);
+    router.push('/dashboard');
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );
