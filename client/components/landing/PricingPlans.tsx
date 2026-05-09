@@ -176,11 +176,11 @@ export function PricingPlans({ onSelectPlan }: { onSelectPlan?: any }) {
                 <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
                 <div className="mt-2">
                   <span className="text-3xl font-bold text-gray-900">{displayPrice(plan)}</span>
-                  {!plan.custom && plan.price > 0 && (
+                  {!plan.custom (plan.price ?? 0) > 0 && (
                     <span className="text-gray-500 text-sm">/mo</span>
                   )}
                 </div>
-                {billingCycle === 'yearly' && plan.price > 0 && (
+                {billingCycle === 'yearly' &&  (plan.price ?? 0) > 0 && (
                   <p className="text-xs text-green-600 mt-1">
                     ${plan.yearlyPrice}/mo billed yearly
                   </p>
