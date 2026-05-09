@@ -22,9 +22,9 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await api.auth.login(email, password);
-      localStorage.setItem('token', response.token);
-      router.push('/dashboard');
+     const response: any = await api.auth.login(email, password);
+localStorage.setItem('token', response.token);
+router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Invalid credentials');
     } finally {
