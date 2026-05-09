@@ -23,9 +23,9 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      const response = await api.auth.register({ name, email, password });
-      localStorage.setItem('token', response.token);
-      router.push('/dashboard');
+     const response: any = await api.auth.register({ name, email, password });
+localStorage.setItem('token', response.token);
+router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
