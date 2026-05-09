@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  avatar        String?
+  plan          String    @default("free")
+  company       String?   // ADD THIS
+  phone         String?   // ADD THIS
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  devices       Device[]
+  contacts      Contact[]
+  chats         Chat[]
+  broadcasts    Broadcast[]
+  apiKeys       ApiKey[]
+  subscriptions Subscription[]
+  templates     Template[]
+  chatbotRules  ChatbotRule[]
+  teamMembers   TeamMember[]
+  webhooks      Webhook[]
+  apiLogs       ApiLog[]
+  media Media[]
+}
+
+model Device {
+  id          String   @id @default(uuid())
+  name        String
+  phoneNumber String
+  status      String   @default("disconnected")
+  battery     Int?
+  lastSeen    DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chats ChatDevice[]
+}
+
+model Chat {
+  id            String    @id @default(uuid())
+  phoneNumber   String
+  name          String
+  lastMessage   String?
+  lastMessageAt DateTime?
+  tags          String[]  @default([])
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  messages Message[]
+  devices  ChatDevice[]
+}
+
+model ChatDevice {
+  id       String @id @default(uuid())
+  chatId   String
+  deviceId String
+  chat     Chat   @relation(fields: [chatId], references: [id])
+  device   Device @relation(fields: [deviceId], references: [id])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  chatId    String
+  sender    String
+  content   String
+  type      String   @default("text")
+  mediaUrl  String?
+  status    String   @default("sent")
+  timestamp DateTime @default(now())
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Contact {
+  id          String   @id @default(uuid())
+  name        String
+  phoneNumber String
+  email       String?
+  avatar      String?
+  tags        String[] @default([])
+  notes       String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Broadcast {
+  id          String    @id @default(uuid())
+  name        String
+  message     String
+  recipients  String[]  @default([])
+  status      String    @default("draft")
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  stats       Json      @default("{}")
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ApiKey {
+  id         String    @id @default(uuid())
+  key        String    @unique
+  name       String
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Subscription {
+  id                   String    @id @default(uuid())
+  userId               String    @unique
+  planId               String    @default("free")
+  status               String    @default("active")
+  startedAt            DateTime  @default(now())
+  renewsAt             DateTime?
+  canceledAt           DateTime?
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  billingCycle         String    @default("monthly")
+  trialEndsAt          DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Add these models to your existing schema
+
+model Template {
+  id        String   @id @default(uuid())
+  name      String
+  content   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ChatbotRule {
+  id        String   @id @default(uuid())
+  keyword   String
+  reply     String
+  matchType String   @default("contains")
+  active    Boolean  @default(true)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  email     String
+  role      String   @default("member")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Webhook {
+  id        String   @id @default(uuid())
+  url       String
+  events    String[] @default([])
+  active    Boolean  @default(true)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ApiLog {
+  id        String   @id @default(uuid())
+  action    String
+  type      String
+  status    String
+  details   String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+model Media {
+  id        String   @id @default(uuid())
+  name      String
+  type      String
+  size      String
+  url       String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model BlogPost {
+  id         String   @id @default(uuid())
+  title      String
+  slug       String   @unique
+  content    String
+  excerpt    String?
+  coverImage String?
+  author     String   @default("WhatsFlow Team")
+  category   String   @default("General")
+  tags       String[] @default([])
+  published  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
