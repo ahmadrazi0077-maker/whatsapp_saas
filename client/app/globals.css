@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth transitions for dark mode */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c4c4c4; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+.dark ::-webkit-scrollbar-thumb { background: #4b5563; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+/* Card hover effects */
+.card-hover {
+  @apply hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200;
+}
+
+/* Gradient text */
+.gradient-text {
+  @apply bg-gradient-to-r from-whatsapp-green to-green-400 bg-clip-text text-transparent;
+}
+
+/* Dark mode overrides */
+.dark h1, .dark h2, .dark h3, .dark h4,
+.dark p, .dark span, .dark div, .dark td, .dark th,
+.dark .text-gray-900, .dark .text-gray-800, .dark .text-gray-700,
+.dark .text-gray-600, .dark .text-gray-500 {
+  color: #e5e7eb !important;
+}
+
+.dark .text-gray-400 { color: #9ca3af !important; }
+.dark .font-bold, .dark .font-semibold, .dark .font-medium { color: #f3f4f6 !important; }
+.dark .text-2xl, .dark .text-3xl, .dark .text-xl, .dark .text-lg { color: #f9fafb !important; }
+
+/* Keep colored text visible in dark mode */
+.dark .text-whatsapp-green,
+.dark .text-green-500, .dark .text-green-600, .dark .text-green-700,
+.dark .text-blue-500, .dark .text-blue-600, .dark .text-blue-700,
+.dark .text-purple-500, .dark .text-purple-600, .dark .text-purple-700,
+.dark .text-red-500, .dark .text-red-600, .dark .text-red-700,
+.dark .text-yellow-500, .dark .text-yellow-600, .dark .text-yellow-700,
+.dark .text-orange-500, .dark .text-orange-600, .dark .text-orange-700 {
+  color: inherit !important;
+}
+
+/* Dark backgrounds */
+.dark .bg-white { background-color: #1f2937 !important; }
+.dark .bg-gray-50 { background-color: #111827 !important; }
+.dark .bg-gray-100 { background-color: #1f2937 !important; }
+
+/* Smooth page transitions */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+
+/* Button pulse */
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
+}
+.btn-pulse { animation: pulse-green 2s infinite; }
+
+/* Input focus */
+input:focus, textarea:focus, select:focus {
+  @apply ring-2 ring-whatsapp-green/20 border-whatsapp-green outline-none;
+}
