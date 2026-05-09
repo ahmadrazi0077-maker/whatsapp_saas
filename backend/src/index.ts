@@ -15,7 +15,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'my-secret-key';
 
 const stripe = new Stripe('sk_test_51TTgqxLL1KA02vvS3YJxtUg4ucon44aYJSuCclGAybQ4TBHiTfjMjfPtX7GpC5OxzB5477tsz8iqSsbJp2Bbz1gp008NcrSDEr', { apiVersion: '2024-06-20' });
 
-app.use(cors({ origin: '*', credentials: true }));
+app.use(cors());
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
