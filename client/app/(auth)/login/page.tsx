@@ -16,14 +16,25 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
- const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const response: any = await api.auth.login(email, password);
-      localStorage.setItem('token', response.token);
+      const API_URL = 'https://whatsappsaas-production-f4eb.up.railway.app/api';
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+      
+      localStorage.setItem('token', data.data.token);
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Invalid credentials');
