@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, Users, MessageSquare } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { api } from '@/lib/api';
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 export default function AnalyticsPage() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
