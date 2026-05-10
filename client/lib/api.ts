@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = '${process.env.NEXT_PUBLIC_API_URL}';
 
 async function request<T>(endpoint: string, options: any = {}): Promise<T> {
   const { method = 'GET', body } = options;

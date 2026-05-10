@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertTriangle, X, ArrowUp } from 'lucide-react';
 import Link from 'next/link';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '${process.env.NEXT_PUBLIC_API_URL}';
 
 export function RateLimitBanner() {
   const [show, setShow] = useState(false);

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '${process.env.NEXT_PUBLIC_API_URL}';
 
 export default function TeamPage() {
   const [members, setMembers] = useState<any[]>([]);

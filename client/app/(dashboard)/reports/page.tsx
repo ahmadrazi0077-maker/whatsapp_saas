@@ -5,7 +5,7 @@ import { Download, FileText, BarChart3, Loader2, TrendingUp, TrendingDown } from
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '${process.env.NEXT_PUBLIC_API_URL}';
 
 export default function ReportsPage() {
   const [dateRange, setDateRange] = useState('30d');

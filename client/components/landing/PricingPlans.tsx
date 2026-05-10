@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Check, Zap, Crown, Star, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '${process.env.NEXT_PUBLIC_API_URL}';
 
 export function PricingPlans({ onSelectPlan }: { onSelectPlan?: any }) {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');

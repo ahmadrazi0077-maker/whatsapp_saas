@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 async function getPost(slug: string) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/blog/${slug}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || '${process.env.NEXT_PUBLIC_API_URL}'}/blog/${slug}`, {
       cache: 'no-store'
     });
     const data = await res.json();

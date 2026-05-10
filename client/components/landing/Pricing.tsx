@@ -5,7 +5,7 @@ import { Check, Zap, Crown, Star, ArrowRight, Shield, Clock } from 'lucide-react
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '${process.env.NEXT_PUBLIC_API_URL}';
 
 export function Pricing() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');

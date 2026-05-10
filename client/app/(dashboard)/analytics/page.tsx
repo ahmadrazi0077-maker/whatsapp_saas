@@ -15,7 +15,7 @@ export default function AnalyticsPage() {
 
   const loadStats = async () => {
     try {
-      const data = await api.analytics.dashboard();
+      const data: any = await api.analytics.dashboard();
       setStats(data);
     } catch (err) {
       console.error('Failed to load stats');

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { api } from '@/lib/api';
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '${process.env.NEXT_PUBLIC_API_URL}';
 export default function BroadcastPage() {
   const [broadcasts, setBroadcasts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,7 @@ export default function BroadcastPage() {
   const loadBroadcasts = async () => {
     try {
       setLoading(true);
-      const data = await api.broadcast.getAll();
+      const data: any = await api.broadcast.getAll();
       setBroadcasts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load broadcasts');

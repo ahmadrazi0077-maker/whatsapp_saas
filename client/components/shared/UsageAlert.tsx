@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertTriangle, X, ArrowRight, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '${process.env.NEXT_PUBLIC_API_URL}';
 
 export function UsageAlert() {
   const [usage, setUsage] = useState<any>(null);

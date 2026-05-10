@@ -78,7 +78,7 @@ const handleBulkTag = async () => {
   const loadContacts = async () => {
     try {
       setLoading(true);
-      const data = await api.contacts.getAll();
+      const data: any = await api.contacts.getAll();
       setContacts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load contacts');
