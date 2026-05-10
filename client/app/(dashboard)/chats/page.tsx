@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Send } from 'lucide-react';
 import { api } from '@/lib/api';
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 export default function ChatsPage() {
   const [chats, setChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
