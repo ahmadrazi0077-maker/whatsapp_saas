@@ -1,5 +1,4 @@
-cd /workspaces/whatsapp_saas/backend
-cat > src/index.ts << 'ENDOFFILE'
+
 import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
@@ -69,4 +68,4 @@ app.get('/api/auth/me', (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log('Server running on port', PORT));
-ENDOFFILE
+
