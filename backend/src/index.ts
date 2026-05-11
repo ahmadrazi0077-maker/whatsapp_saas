@@ -216,5 +216,39 @@ app.post('/api/auth/change-password', async (req, res) => {
   res.json({ success: true, data: { message: 'Password changed' } });
 });
 
+// ============ WHATSAPP WEBHOOK ============
+app.post('/api/webhook/whatsapp', (req, res) => {
+  console.log('📩 WhatsApp webhook received:', JSON.stringify(req.body, null, 2));
+  
+  const { from, body, timestamp } = req.body;
+  
+  if (from && body) {
+    // Save message to contacts/conversations
+    console.log(`Message from ${from}: ${body}`);
+    
+    // Here you would save to your database
+    // await prisma.message.create({ data: { ... } });
+  }
+  
+  // Always return 200 to acknowledge receipt
+  res.status(200).json({ status: 'ok' });
+});
+
+// Webhook verification (for Meta/Twilio)
+app.get('/api/webhook/whatsapp', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+  
+  const VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN || 'whatsflow-webhook-token';
+  
+  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    console.log('Webhook verified successfully');
+    res.status(200).send(challenge);
+  } else {
+    res.status(403).json({ error: 'Verification failed' });
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log('Server running on port', PORT));
