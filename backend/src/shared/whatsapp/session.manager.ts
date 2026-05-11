@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 
 const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || 'https://evolution-api-production-d903.up.railway.app';
-const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || 'my-evolution-api-key-2024';
+const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || 'ahmad_whatsapp_saas_2026';
 
 class SessionManager extends EventEmitter {
   async createSession(deviceId: string, userId: string, phoneNumber: string) {
