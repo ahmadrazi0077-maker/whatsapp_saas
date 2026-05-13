@@ -3,3 +3,5 @@ node_modules/
 .next/
 backend/node_modules/
 client/node_modules/
+node_modules/
+.next/
