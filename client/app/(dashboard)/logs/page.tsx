@@ -4,8 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, Clock, CheckCircle, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+<<<<<<< HEAD
 
 const API_URL = '${process.env.NEXT_PUBLIC_API_URL}';
+=======
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+>>>>>>> 984d5a8205ee3e6ea073c4bbafde4a7ee7130099
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<any[]>([]);

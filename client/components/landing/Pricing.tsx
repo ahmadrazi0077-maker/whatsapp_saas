@@ -203,11 +203,11 @@ export function Pricing() {
                   <p className="text-xs text-gray-500 mt-0.5">{plan.desc}</p>
                   <div className="mt-3">
                     <span className="text-3xl font-bold text-gray-900">{displayPrice}</span>
-                    {!plan.custom && plan.price > 0 && (
+                    {!plan.custom && (plan.price ?? 0) > 0 && (
                       <span className="text-gray-500 text-sm">/mo</span>
                     )}
                   </div>
-                  {billingCycle === 'yearly' && plan.price > 0 && (
+                  {billingCycle === 'yearly' &&  (plan.price ?? 0) > 0 && (
                     <p className="text-xs text-green-600 font-medium mt-1">
                       ${plan.yearlyPrice}/mo billed yearly
                     </p>

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Bell, CheckCircle, AlertTriangle, Info, Trash2, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([
     { id: '1', type: 'success', title: 'Broadcast completed', message: 'Campaign "Summer Sale" sent to 500 contacts', time: '2 mins ago', read: false },

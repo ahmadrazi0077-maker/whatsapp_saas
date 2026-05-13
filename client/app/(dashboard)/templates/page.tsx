@@ -6,7 +6,11 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 
+<<<<<<< HEAD
 const API_URL = '${process.env.NEXT_PUBLIC_API_URL}';
+=======
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+>>>>>>> 984d5a8205ee3e6ea073c4bbafde4a7ee7130099
 
 export default function TemplatesPage() {
   const [templates, setTemplates] = useState<any[]>([]);
