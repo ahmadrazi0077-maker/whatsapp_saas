@@ -7,7 +7,6 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export default function ChatbotPage() {
   const [rules, setRules] = useState<any[]>([]);

@@ -20,8 +20,6 @@ export default function ChatsPage() {
       setLoading(true);
       const data: any = await api.chats.getAll();
       setChats(data || []);
-     const data: any = await api.chats.getAll();
-setChats(data || []);
     } catch (err) {
       console.error('Failed to load chats');
     } finally {
