@@ -18,13 +18,10 @@ export default function ChatsPage() {
   const loadChats = async () => {
     try {
       setLoading(true);
-<<<<<<< HEAD
       const data: any = await api.chats.getAll();
       setChats(data || []);
-=======
      const data: any = await api.chats.getAll();
-setChats((data as any[]) || []);
->>>>>>> 984d5a8205ee3e6ea073c4bbafde4a7ee7130099
+setChats(data || []);
     } catch (err) {
       console.error('Failed to load chats');
     } finally {

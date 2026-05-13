@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-const API_BASE_URL = '${process.env.NEXT_PUBLIC_API_URL}';
-=======
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
->>>>>>> 984d5a8205ee3e6ea073c4bbafde4a7ee7130099
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 async function request(endpoint: string, options: any = {}): Promise<any> {
   const { method = 'GET', body } = options;

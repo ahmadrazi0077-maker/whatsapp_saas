@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ﻿'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import Link from 'next/link';
 
-const API_URL = '${process.env.NEXT_PUBLIC_API_URL}';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 export default function SubscriptionPage() {
   const [sub, setSub] = useState<any>(null);
@@ -75,7 +74,6 @@ export default function SubscriptionPage() {
     </div>
   );
 }
-=======
 ﻿'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -152,5 +150,4 @@ export default function SubscriptionPage() {
     </div>
   );
 }
->>>>>>> 984d5a8205ee3e6ea073c4bbafde4a7ee7130099
 
