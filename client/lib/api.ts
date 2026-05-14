@@ -1,4 +1,4 @@
-const API_BASE_URL = '/api';
+const API_BASE_URL = 'https://whatsapp-saas-tftc.onrender.com/api';
 
 async function request<T>(endpoint: string, options: any = {}): Promise<T> {
   const { method = 'GET', body } = options;
