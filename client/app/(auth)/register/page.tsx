@@ -7,6 +7,7 @@ import { MessageCircle, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { api } from '@/lib/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://whatsapp-saas-tftc.onrender.com/api';
 
 export default function RegisterPage() {
   const router = useRouter();
