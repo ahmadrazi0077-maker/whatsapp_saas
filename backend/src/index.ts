@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import Stripe from 'stripe';
 import { sessionManager } from './shared/whatsapp/session.manager';
 import { prisma } from './shared/lib/prisma';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://whatsapp-saas-tftc.onrender.com/api';
+
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'my-secret-key';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_xxx', { apiVersion: '2024-06-20' });
