@@ -22,7 +22,7 @@ model User {
   devices       Device[]
   contacts      Contact[]
   chats         Chat[]
-  broadcasts    Broadcast[]
+  campaigns    campaign[]
   apiKeys       ApiKey[]
   subscriptions Subscription[]
   templates     Template[]
@@ -99,20 +99,6 @@ model Contact {
   updatedAt   DateTime @updatedAt
 }
 
-model Broadcast {
-  id          String    @id @default(uuid())
-  name        String
-  message     String
-  recipients  String[]  @default([])
-  status      String    @default("draft")
-  scheduledAt DateTime?
-  sentAt      DateTime?
-  stats       Json      @default("{}")
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
 
 model ApiKey {
   id         String    @id @default(uuid())
@@ -222,4 +208,18 @@ model BlogPost {
   published  Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+model Campaign {
+  id          String    @id @default(uuid())
+  name        String
+  message     String
+  recipients  String[]  @default([])
+  status      String    @default("draft")
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  stats       Json      @default("{}")
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
