@@ -22,7 +22,7 @@ model User {
   devices       Device[]
   contacts      Contact[]
   chats         Chat[]
-  campaigns    campaign[]
+ campaigns    Campaign[]    // ✅ Correct
   apiKeys       ApiKey[]
   subscriptions Subscription[]
   templates     Template[]
