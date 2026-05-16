@@ -111,45 +111,61 @@ app.delete('/api/contacts/:id', async (req, res) => {
   catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-// ============ CAMPAIGNS/BROADCASTS (Database) ============
+// ============ CAMPAIGNS (Database) ============
 app.get('/api/campaigns', async (req, res) => {
   const d = getUserFromToken(req); if (!d) return res.status(401).json({ success: false, error: 'No token' });
-  try { const data = await prisma.broadcast.findMany({ where: { userId: d.userId }, orderBy: { createdAt: 'desc' } }); return res.json({ success: true, data }); }
+  try { 
+    const data = await prisma.campaign.findMany({ where: { userId: d.userId }, orderBy: { createdAt: 'desc' } }); 
+    return res.json({ success: true, data }); 
+  }
   catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 app.post('/api/campaigns', async (req, res) => {
   const d = getUserFromToken(req); if (!d) return res.status(401).json({ success: false, error: 'No token' });
   try {
-    const data = await prisma.broadcast.create({ data: { name: req.body.name, message: req.body.message, recipients: req.body.recipients || [], status: req.body.scheduledAt ? 'scheduled' : 'draft', scheduledAt: req.body.scheduledAt ? new Date(req.body.scheduledAt) : null, userId: d.userId } });
+    const data = await prisma.campaign.create({ 
+      data: { 
+        name: req.body.name, 
+        message: req.body.message, 
+        recipients: req.body.recipients || [], 
+        status: req.body.scheduledAt ? 'scheduled' : 'draft', 
+        scheduledAt: req.body.scheduledAt ? new Date(req.body.scheduledAt) : null, 
+        userId: d.userId 
+      } 
+    });
     res.status(201).json({ success: true, data });
   } catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 app.put('/api/campaigns/:id', async (req, res) => {
   const d = getUserFromToken(req); if (!d) return res.status(401).json({ success: false, error: 'No token' });
-  try { await prisma.broadcast.updateMany({ where: { id: req.params.id, userId: d.userId }, data: req.body }); res.json({ success: true, data: { message: 'Updated' } }); }
+  try { 
+    await prisma.campaign.updateMany({ where: { id: req.params.id, userId: d.userId }, data: req.body }); 
+    res.json({ success: true, data: { message: 'Updated' } }); 
+  }
   catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 app.post('/api/campaigns/:id/send', async (req, res) => {
   const d = getUserFromToken(req); if (!d) return res.status(401).json({ success: false, error: 'No token' });
-  try { await prisma.broadcast.updateMany({ where: { id: req.params.id, userId: d.userId }, data: { status: 'sent', sentAt: new Date() } }); res.json({ success: true, data: { message: 'Sent' } }); }
+  try { 
+    await prisma.campaign.updateMany({ where: { id: req.params.id, userId: d.userId }, data: { status: 'sent', sentAt: new Date() } }); 
+    res.json({ success: true, data: { message: 'Sent' } }); 
+  }
   catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 app.delete('/api/campaigns/:id', async (req, res) => {
   const d = getUserFromToken(req); if (!d) return res.status(401).json({ success: false, error: 'No token' });
-  try { await prisma.broadcast.deleteMany({ where: { id: req.params.id, userId: d.userId } }); res.json({ success: true, data: { message: 'Deleted' } }); }
+  try { 
+    await prisma.campaign.deleteMany({ where: { id: req.params.id, userId: d.userId } }); 
+    res.json({ success: true, data: { message: 'Deleted' } }); 
+  }
   catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-// ============ BROADCASTS (same as campaigns) ============
-app.get('/api/broadcasts', async (req, res) => {
-  const d = getUserFromToken(req); if (!d) return res.status(401).json({ success: false, error: 'No token' });
-  try { const data = await prisma.broadcast.findMany({ where: { userId: d.userId }, orderBy: { createdAt: 'desc' } }); return res.json({ success: true, data }); }
-  catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
-});
+
 
 // ============ TEMPLATES (Database) ============
 app.get('/api/templates', async (req, res) => {
