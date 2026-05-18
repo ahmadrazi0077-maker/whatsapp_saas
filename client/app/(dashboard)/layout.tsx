@@ -12,7 +12,7 @@ import {
   Calendar, FileText, Bot, Image, Webhook, Activity, CreditCard, Crown,
 } from 'lucide-react';
 
-const API_URL = '${process.env.NEXT_PUBLIC_API_URL}';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://whatsapp-saas-tftc.onrender.com/api';
 
 const navigation = [
   { category: 'Main', items: [
@@ -22,7 +22,7 @@ const navigation = [
     { name: 'Devices', href: '/devices', icon: Smartphone },
   ]},
   { category: 'Communication', items: [
-    { name: 'Broadcast', href: '/broadcast', icon: Radio },
+  
     { name: 'Campaigns', href: '/campaigns', icon: Calendar },
     { name: 'Templates', href: '/templates', icon: FileText },
     { name: 'ChatBot', href: '/chatbot', icon: Bot },
