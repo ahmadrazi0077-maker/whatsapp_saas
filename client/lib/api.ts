@@ -57,11 +57,10 @@ export const api = {
   update: (id: string, data: any) => request<any>(`/contacts/${id}`, { method: 'PUT', body: data }),
   delete: (id: string) => request<any>(`/contacts/${id}`, { method: 'DELETE' }),
 },
-broadcast: {
-  getAll: () => request<any[]>('/broadcasts'),
-  create: (data: any) => request<any>('/broadcasts', { method: 'POST', body: data }),
-  send: (id: string) => request<any>(`/broadcasts/${id}/send`, { method: 'POST' }),
-  delete: (id: string) => request<any>(`/broadcasts/${id}`, { method: 'DELETE' }),
+media: {
+  getAll: () => request<any[]>('/media'),
+  upload: (data: any) => request<any>('/media/upload', { method: 'POST', body: data }),
+  delete: (id: string) => request<any>(`/media/${id}`, { method: 'DELETE' }),
 },
   devices: {
     getAll: () => request('/devices'),
