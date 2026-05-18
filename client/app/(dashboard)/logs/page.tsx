@@ -5,7 +5,7 @@ import { Search, Filter, Download, Clock, CheckCircle, XCircle, AlertTriangle, L
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
-const API_URL = '${process.env.NEXT_PUBLIC_API_URL}';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://whatsapp-saas-tftc.onrender.com/api';
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
