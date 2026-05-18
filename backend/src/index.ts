@@ -9,6 +9,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'my-secret-key';
 
 app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json());
+app.use('/api/contacts', contactRoutes);
+app.use('/api/chats', chatRoutes);
+app.use('/api/devices', deviceRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/broadcasts', broadcastRoutes);
+app.use('/api/team', teamRoutes);
+app.use('/api/webhooks', webhookRoutes);
+app.use('/api/logs', logRoutes);
 
 const getUserFromToken = (req: any) => {
   try {
