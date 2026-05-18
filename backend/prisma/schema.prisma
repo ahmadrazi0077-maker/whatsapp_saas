@@ -31,6 +31,7 @@ model User {
   webhooks      Webhook[]
   apiLogs       ApiLog[]
   media Media[]
+  @@map("User")
 }
 
 model Device {
@@ -46,6 +47,7 @@ model Device {
   updatedAt   DateTime @updatedAt
 
   chats ChatDevice[]
+ @@map("Device")  
 }
 
 model Chat {
@@ -97,6 +99,7 @@ model Contact {
   user        User     @relation(fields: [userId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+ @@map("Contact") 
 }
 
 
@@ -139,6 +142,7 @@ model Template {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+ @@map("Template") 
 }
 
 model ChatbotRule {
@@ -151,6 +155,7 @@ model ChatbotRule {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@map("ChatbotRule")
 }
 
 model TeamMember {
@@ -161,6 +166,7 @@ model TeamMember {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+ @@map("TeamMember")
 }
 
 model Webhook {
@@ -172,6 +178,7 @@ model Webhook {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@map("Webhook")  
 }
 
 model ApiLog {
@@ -194,6 +201,7 @@ model Media {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+ @@map("Media")
 }
 model BlogPost {
   id         String   @id @default(uuid())
@@ -208,6 +216,7 @@ model BlogPost {
   published  Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+ @@map("BlogPost")
 }
 model Campaign {
   id          String    @id @default(uuid())
@@ -222,4 +231,5 @@ model Campaign {
   user        User      @relation(fields: [userId], references: [id])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+ @@map("campaigns")
 }
