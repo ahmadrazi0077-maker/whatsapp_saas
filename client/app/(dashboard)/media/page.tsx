@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 
-const API_URL = '${process.env.NEXT_PUBLIC_API_URL}';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://whatsapp-saas-tftc.onrender.com/api';
 
 export default function MediaPage() {
   const [files, setFiles] = useState<any[]>([]);
