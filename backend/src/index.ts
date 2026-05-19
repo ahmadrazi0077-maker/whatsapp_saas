@@ -314,7 +314,7 @@ app.post('/api/webhook/whatsapp', async (req, res) => {
             
             // Save to database
             try {
-              const anyUser = await prisma.user.findFirst();
+             const anyUser = await prisma.user.findFirst() || { id: 'system' };
               if (!anyUser) continue;
               
               let chat = await prisma.chat.findFirst({ where: { phoneNumber: from } });
