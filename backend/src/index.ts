@@ -292,10 +292,76 @@ app.get('/api/webhooks', async (req, res) => {
   catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-app.post('/api/webhooks', async (req, res) => {
-  const d = getUserFromToken(req); if (!d) return res.status(401).json({ success: false, error: 'No token' });
-  try { const data = await prisma.webhook.create({ data: { url: req.body.url, events: req.body.events || [], userId: d.userId } }); res.status(201).json({ success: true, data }); }
-  catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
+// Receive WhatsApp messages and save to chat
+app.post('/api/webhook/whatsapp', async (req, res) => {
+  console.log('📩 WhatsApp message received');
+  
+  if (req.body.object === 'whatsapp_business_account') {
+    for (const entry of req.body.entry || []) {
+      for (const change of entry.changes || []) {
+        if (change.field === 'messages') {
+          const messages = change.value?.messages || [];
+          const contacts = change.value?.contacts || [];
+          
+          for (const msg of messages) {
+            const from = msg.from;
+            const body = msg.text?.body || '[Media]';
+            const contactName = contacts.find((c: any) => c.wa_id === from)?.profile?.name || from;
+            
+            console.log(`💬 WhatsApp [${contactName}]: ${body}`);
+            
+            // Save to Chat model in database
+            try {
+              // Find or create chat
+              let chat = await prisma.chat.findFirst({
+                where: { phoneNumber: from }
+              });
+              
+              if (!chat) {
+                chat = await prisma.chat.create({
+                  data: {
+                    phoneNumber: from,
+                    name: contactName,
+                    lastMessage: body,
+                    lastMessageAt: new Date(),
+                    userId: 'system', // or find the actual user
+                  }
+                });
+              } else {
+                await prisma.chat.update({
+                  where: { id: chat.id },
+                  data: {
+                    lastMessage: body,
+                    lastMessageAt: new Date(),
+                  }
+                });
+              }
+              
+              // Save the message
+              await prisma.message.create({
+                data: {
+                  chatId: chat.id,
+                  sender: 'contact',
+                  content: body,
+                  type: 'text',
+                  status: 'delivered',
+                  timestamp: new Date(Number(msg.timestamp) * 1000 || Date.now()),
+                }
+              });
+              
+              console.log('✅ Message saved to chat:', chat.id);
+            } catch (dbErr) {
+              console.log('DB save error:', dbErr);
+            }
+            
+            // Auto-reply
+            await sendWhatsAppMessage(from, 'Thanks for your message! We received it. - WhatsFlow');
+          }
+        }
+      }
+    }
+  }
+  res.status(200).json({ status: 'ok' });
 });
 
 app.delete('/api/webhooks/:id', async (req, res) => {
@@ -305,7 +371,26 @@ app.delete('/api/webhooks/:id', async (req, res) => {
 });
 
 // ============ MISC ============
-app.get('/api/chats', (req, res) => res.json({ success: true, data: [] }));
+app.get('/api/chats', async (req, res) => {
+  const d = getUserFromToken(req);
+  if (!d) return res.status(401).json({ success: false, error: 'No token' });
+  
+  try {
+    const chats = await prisma.chat.findMany({
+      where: { userId: d.userId },
+      orderBy: { lastMessageAt: 'desc' },
+      include: {
+        messages: {
+          orderBy: { timestamp: 'asc' },
+          take: 50,
+        }
+      }
+    });
+    res.json({ success: true, data: chats });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message }); 
+  }
+});
 app.get('/api/logs', (req, res) => res.json({ success: true, data: [] }));
 app.get('/api/subscription', (req, res) => res.json({ success: true, data: { planId: 'free', status: 'active', plan: { name: 'Free', price: 0 } } }));
 app.get('/api/usage', (req, res) => res.json({ success: true, data: { messagesSent: 0, messagesLimit: 100 } }));
@@ -320,6 +405,77 @@ app.get('/api/analytics/dashboard', async (req, res) => {
     res.json({ success: true, data: { totalMessages: 0, activeContacts: contacts, connectedDevices: devices, campaigns: campaigns, deliveryRate: '0%' } });
   } catch (e: any) { res.json({ success: true, data: { totalMessages: 0, activeContacts: 0, connectedDevices: 0, deliveryRate: '0%' } }); }
 });
+// ============ WHATSAPP CLOUD API ============
+const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN || '';
+const WHATSAPP_PHONE_ID = process.env.WHATSAPP_PHONE_ID || '';
 
+// Send WhatsApp message
+async function sendWhatsAppMessage(to: string, message: string) {
+  if (!WHATSAPP_TOKEN || !WHATSAPP_PHONE_ID) {
+    console.log('WhatsApp not configured');
+    return null;
+  }
+  const response = await fetch(`https://graph.facebook.com/v18.0/${WHATSAPP_PHONE_ID}/messages`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: to,
+      type: 'text',
+      text: { preview_url: false, body: message },
+    }),
+  });
+  return response.json();
+}
+
+// API: Send WhatsApp message from dashboard
+app.post('/api/whatsapp/send', async (req, res) => {
+  const d = getUserFromToken(req);
+  if (!d) return res.status(401).json({ success: false, error: 'No token' });
+  try {
+    const result = await sendWhatsAppMessage(req.body.to, req.body.message);
+    res.json({ success: true, data: result });
+  } catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
+});
+
+// Webhook verification (Meta calls this to verify)
+app.get('/api/webhook/whatsapp', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'whatsflow-webhook-token';
+  
+  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    console.log('✅ WhatsApp webhook verified');
+    return res.status(200).send(challenge);
+  }
+  res.status(403).json({ error: 'Verification failed' });
+});
+
+// Receive WhatsApp messages
+app.post('/api/webhook/whatsapp', async (req, res) => {
+  console.log('📩 WhatsApp message received');
+  if (req.body.object === 'whatsapp_business_account') {
+    for (const entry of req.body.entry || []) {
+      for (const change of entry.changes || []) {
+        if (change.field === 'messages') {
+          const messages = change.value?.messages || [];
+          for (const msg of messages) {
+            const from = msg.from;
+            const body = msg.text?.body || '[Media]';
+            console.log(`From ${from}: ${body}`);
+            
+            // Auto-reply
+            await sendWhatsAppMessage(from, 'Thanks for your message! We received it. - WhatsFlow');
+          }
+        }
+      }
+    }
+  }
+  res.status(200).json({ status: 'ok' });
+});
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
