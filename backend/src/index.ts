@@ -295,6 +295,7 @@ app.get('/api/webhooks', async (req, res) => {
 // Receive WhatsApp messages and save to chat
 app.post('/api/webhook/whatsapp', async (req, res) => {
   console.log('📩 WhatsApp webhook called');
+   console.log('Body:', JSON.stringify(req.body, null, 2)); 
   
   if (req.body.object === 'whatsapp_business_account') {
     for (const entry of req.body.entry || []) {
