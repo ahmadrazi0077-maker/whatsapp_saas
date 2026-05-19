@@ -27,7 +27,7 @@ model User {
   teamMembers  TeamMember[]
   webhooks     Webhook[]
  chats Chat[]
- devices  ChatDevice[] 
+
 }
 
 model Contact {
