@@ -27,6 +27,7 @@ model User {
   teamMembers  TeamMember[]
   webhooks     Webhook[]
  chats Chat[]
+ devices  ChatDevice[] 
 }
 
 model Contact {
@@ -84,6 +85,7 @@ model Device {
   status      String   @default("disconnected")
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chats       ChatDevice[]   // ADD THIS LINE
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
