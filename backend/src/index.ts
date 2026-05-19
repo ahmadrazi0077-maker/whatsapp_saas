@@ -292,40 +292,32 @@ app.get('/api/webhooks', async (req, res) => {
   catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-// Receive WhatsApp messages and save to chat
 app.post('/api/webhook/whatsapp', async (req, res) => {
   console.log('📩 WhatsApp webhook called');
-   console.log('Body:', JSON.stringify(req.body, null, 2)); 
   
   if (req.body.object === 'whatsapp_business_account') {
     for (const entry of req.body.entry || []) {
       for (const change of entry.changes || []) {
         if (change.field === 'messages') {
-          const messages = change.value?.messages || [];
-          const contacts = change.value?.contacts || [];
+          const value = change.value || {};
+          const messages = value.messages || [];
+          const contacts = value.contacts || [];
+          const statuses = value.statuses || [];
           
+          // Handle actual messages
           for (const msg of messages) {
-            // Skip messages sent BY us (outgoing)
-            if (msg.from === WHATSAPP_PHONE_ID) continue;
-            
             const from = msg.from;
             const body = msg.text?.body || '[Media]';
             const contactName = contacts.find((c: any) => c.wa_id === from)?.profile?.name || from;
             
-            console.log(`💬 [${contactName}]: ${body}`);
+            console.log(`💬 Message from ${contactName}: ${body}`);
             
-            // Find any user to assign the chat to (for testing, use first user)
+            // Save to database
             try {
               const anyUser = await prisma.user.findFirst();
-              if (!anyUser) {
-                console.log('No users in database - skipping save');
-                continue;
-              }
+              if (!anyUser) continue;
               
-              let chat = await prisma.chat.findFirst({
-                where: { phoneNumber: from }
-              });
-              
+              let chat = await prisma.chat.findFirst({ where: { phoneNumber: from } });
               if (!chat) {
                 chat = await prisma.chat.create({
                   data: {
@@ -336,14 +328,10 @@ app.post('/api/webhook/whatsapp', async (req, res) => {
                     userId: anyUser.id,
                   }
                 });
-                console.log('✅ Chat created:', chat.id);
               } else {
                 await prisma.chat.update({
                   where: { id: chat.id },
-                  data: {
-                    lastMessage: body,
-                    lastMessageAt: new Date(),
-                  }
+                  data: { lastMessage: body, lastMessageAt: new Date() }
                 });
               }
               
@@ -358,18 +346,20 @@ app.post('/api/webhook/whatsapp', async (req, res) => {
                 }
               });
               
-              console.log('✅ Message saved to database');
-            } catch (dbErr: any) {
-              console.log('❌ DB error:', dbErr.message);
-            }
-            
-            // Send auto-reply
-            try {
-              await sendWhatsAppMessage(from, 'Thanks for your message! We received it. - WhatsFlow');
+              console.log('✅ Message saved');
+              
+              // Auto-reply
+              await sendWhatsAppMessage(from, 'Thanks for your message! - WhatsFlow');
               console.log('✅ Auto-reply sent');
             } catch (e: any) {
-              console.log('❌ Auto-reply failed:', e.message);
+              console.log('❌ Error:', e.message);
             }
+          }
+          
+          // Handle status updates (delivered/sent/read)
+          for (const status of statuses) {
+            console.log(`📊 Status: ${status.status} for ${status.recipient_id}`);
+            // Update message status in database if needed
           }
         }
       }
@@ -377,7 +367,6 @@ app.post('/api/webhook/whatsapp', async (req, res) => {
   }
   res.status(200).json({ status: 'ok' });
 });
-
 app.delete('/api/webhooks/:id', async (req, res) => {
   const d = getUserFromToken(req); if (!d) return res.status(401).json({ success: false, error: 'No token' });
   try { await prisma.webhook.deleteMany({ where: { id: req.params.id, userId: d.userId } }); res.json({ success: true, data: { message: 'Deleted' } }); }
