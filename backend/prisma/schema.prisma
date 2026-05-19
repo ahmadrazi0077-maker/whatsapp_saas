@@ -26,6 +26,7 @@ model User {
   media        Media[]
   teamMembers  TeamMember[]
   webhooks     Webhook[]
+ chats Chat[]
 }
 
 model Contact {
@@ -131,4 +132,39 @@ model BlogPost {
   published Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+model Chat {
+  id            String    @id @default(uuid())
+  phoneNumber   String
+  name          String
+  lastMessage   String?
+  lastMessageAt DateTime?
+  tags          String[]  @default([])
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages      Message[]
+  devices       ChatDevice[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  chatId    String
+  sender    String
+  content   String
+  type      String   @default("text")
+  mediaUrl  String?
+  status    String   @default("sent")
+  timestamp DateTime @default(now())
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model ChatDevice {
+  id       String @id @default(uuid())
+  chatId   String
+  deviceId String
+  chat     Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
 }
