@@ -294,7 +294,7 @@ app.get('/api/webhooks', async (req, res) => {
 
 // Receive WhatsApp messages and save to chat
 app.post('/api/webhook/whatsapp', async (req, res) => {
-  console.log('📩 WhatsApp message received');
+  console.log('📩 WhatsApp webhook called');
   
   if (req.body.object === 'whatsapp_business_account') {
     for (const entry of req.body.entry || []) {
@@ -304,15 +304,23 @@ app.post('/api/webhook/whatsapp', async (req, res) => {
           const contacts = change.value?.contacts || [];
           
           for (const msg of messages) {
+            // Skip messages sent BY us (outgoing)
+            if (msg.from === WHATSAPP_PHONE_ID) continue;
+            
             const from = msg.from;
             const body = msg.text?.body || '[Media]';
             const contactName = contacts.find((c: any) => c.wa_id === from)?.profile?.name || from;
             
-            console.log(`💬 WhatsApp [${contactName}]: ${body}`);
+            console.log(`💬 [${contactName}]: ${body}`);
             
-            // Save to Chat model in database
+            // Find any user to assign the chat to (for testing, use first user)
             try {
-              // Find or create chat
+              const anyUser = await prisma.user.findFirst();
+              if (!anyUser) {
+                console.log('No users in database - skipping save');
+                continue;
+              }
+              
               let chat = await prisma.chat.findFirst({
                 where: { phoneNumber: from }
               });
@@ -324,9 +332,10 @@ app.post('/api/webhook/whatsapp', async (req, res) => {
                     name: contactName,
                     lastMessage: body,
                     lastMessageAt: new Date(),
-                    userId: 'system', // or find the actual user
+                    userId: anyUser.id,
                   }
                 });
+                console.log('✅ Chat created:', chat.id);
               } else {
                 await prisma.chat.update({
                   where: { id: chat.id },
@@ -337,7 +346,6 @@ app.post('/api/webhook/whatsapp', async (req, res) => {
                 });
               }
               
-              // Save the message
               await prisma.message.create({
                 data: {
                   chatId: chat.id,
@@ -349,13 +357,18 @@ app.post('/api/webhook/whatsapp', async (req, res) => {
                 }
               });
               
-              console.log('✅ Message saved to chat:', chat.id);
-            } catch (dbErr) {
-              console.log('DB save error:', dbErr);
+              console.log('✅ Message saved to database');
+            } catch (dbErr: any) {
+              console.log('❌ DB error:', dbErr.message);
             }
             
-            // Auto-reply
-            await sendWhatsAppMessage(from, 'Thanks for your message! We received it. - WhatsFlow');
+            // Send auto-reply
+            try {
+              await sendWhatsAppMessage(from, 'Thanks for your message! We received it. - WhatsFlow');
+              console.log('✅ Auto-reply sent');
+            } catch (e: any) {
+              console.log('❌ Auto-reply failed:', e.message);
+            }
           }
         }
       }
