@@ -287,7 +287,29 @@ app.delete('/api/webhooks/:id', async (req, res) => {
   try { await prisma.webhook.deleteMany({ where: { id: req.params.id, userId: d.userId } }); res.json({ success: true, data: { message: 'Deleted' } }); }
   catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
 });
+// ============ API KEYS (Database) ============
+app.get('/api/auth/api-key', async (req, res) => {
+  const d = getUserFromToken(req);
+  if (!d) return res.status(401).json({ success: false, error: 'No token' });
+  try {
+    const apiKey = await prisma.apiKey.findFirst({ where: { userId: d.userId } });
+    res.json({ success: true, data: { apiKey: apiKey?.key || null } });
+  } catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
+});
 
+app.post('/api/auth/api-key/regenerate', async (req, res) => {
+  const d = getUserFromToken(req);
+  if (!d) return res.status(401).json({ success: false, error: 'No token' });
+  try {
+    const newKey = 'sk-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    await prisma.apiKey.upsert({
+      where: { userId: d.userId },
+      update: { key: newKey },
+      create: { key: newKey, name: 'Default', userId: d.userId },
+    });
+    res.json({ success: true, data: { apiKey: newKey } });
+  } catch (e: any) { res.status(500).json({ success: false, error: e.message }); }
+});
 // ============ MISC ============
 app.get('/api/chats', (req, res) => res.json({ success: true, data: [] }));
 app.get('/api/logs', (req, res) => res.json({ success: true, data: [] }));
