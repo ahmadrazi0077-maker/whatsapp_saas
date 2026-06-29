@@ -63,6 +63,12 @@ broadcast: {
   send: (id: string) => request<any>(`/broadcasts/${id}/send`, { method: 'POST' }),
   delete: (id: string) => request<any>(`/broadcasts/${id}`, { method: 'DELETE' }),
 },
+  campaigns: {
+  getAll: () => request('/campaigns'),
+  create: (data) => request('/campaigns', { method: 'POST', body: data }),
+  send: (id) => request(`/campaigns/${id}/send`, { method: 'POST' }),
+  delete: (id) => request(`/campaigns/${id}`, { method: 'DELETE' }),
+},
   devices: {
     getAll: () => request('/devices'),
     connect: (data: any) => request('/devices/connect', { method: 'POST', body: data }),
